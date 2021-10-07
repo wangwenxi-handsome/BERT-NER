@@ -10,7 +10,7 @@ class Worker:
         loss_func: Callable,
         model: nn.Module = None,
         load_checkpoint_path: str = None,
-        load_by_state_dict: bool = True,
+        load_by_state_dict: bool = False,
     ):
         self.load_model(model, load_checkpoint_path, load_by_state_dict)
         self.save_by_state_dict = load_by_state_dict
@@ -26,8 +26,8 @@ class Worker:
         else:
             self.model = torch.load(load_checkpoint_path)
 
-    def save_model(self, save_path, save_by_state_dict=True):
-        if save_by_state_dict:
+    def save_model(self, save_path):
+        if self.save_by_state_dict:
             torch.save(self.model.state_dict(), save_path)
         else:
             torch.save(self.model, save_path)
@@ -42,7 +42,7 @@ class Trainer(Worker):
         dataloader,
         model: nn.Module = None,
         load_checkpoint_path: str = None,
-        load_by_state_dict: bool = True,
+        load_by_state_dict: bool = False,
     ):
         super().__init__(loss_func, model, load_checkpoint_path, load_by_state_dict)
         self.epoch = epoch
@@ -88,10 +88,14 @@ class Trainer(Worker):
             if self.best_loss is None or valid_loss < self.best_loss:
                 self.best_loss = valid_loss
                 self.best_loss_epoch = e
+                # save model
+                if e > 3:
+                    self.save_model(f"checkpoint/{e}.pth")
             elif e - self.best_loss_epoch > 2:
                 break
 
     def rollout(self, dataloader):
+        self.model.eval()
         loss = 0
         for data in dataloader:
             data = {i: data[i].to(self.device) for i in data}
@@ -99,4 +103,5 @@ class Trainer(Worker):
             output = self.model(**data)
             loss += self.loss_func(output.contiguous().view(-1, self.model.label_num), label.contiguous().view(-1))
         loss /= len(dataloader)
+        self.model.train()
         return loss
