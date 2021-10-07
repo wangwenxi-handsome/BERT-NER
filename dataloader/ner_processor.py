@@ -1,5 +1,6 @@
 import os
 import torch
+from torch._C import dtype
 from torch.utils.data import Dataset
 from transformers import BertTokenizerFast
 
@@ -44,7 +45,7 @@ class NERProcessor:
         self.return_tensors = return_tensors
 
     def get_tensor(self):
-        save_file_path = os.path.join("/Users/bytedance/Desktop/xixi-nlp/data", "data.pth")
+        save_file_path = os.path.join("/opt/tiger/nlp-xixi/data", "data.pth")
         if os.path.exists(save_file_path):
             return torch.load(save_file_path)
         else:
@@ -65,8 +66,8 @@ class NERProcessor:
                     "token_type_ids": data_x["token_type_ids"],
                     "attention_mask": data_x["attention_mask"],
                     "offset_mapping": data_x["offset_mapping"],
-                    "label": torch.Tensor(data_y),
-                    "length": torch.Tensor(data_len)
+                    "label": torch.tensor(data_y, dtype=torch.long),
+                    "length": torch.tensor(data_len, dtype=torch.long),
                 }
                 self.data[item] = data
             torch.save(self.data, save_file_path)

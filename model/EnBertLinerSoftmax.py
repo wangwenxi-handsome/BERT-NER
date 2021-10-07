@@ -8,7 +8,6 @@ class EnBertLinerSoftmax(nn.Module):
         self.bert = AutoModel.from_pretrained("bert-base-cased")
         self.dropout = nn.Dropout(0.95)
         self.classifier = nn.Linear(input_num, label_num)
-        self.init_weights()
 
     def forward(self, input_ids, token_type_ids, attention_mask, offset_mapping, label=None):
         output = self.bert(input_ids, token_type_ids, attention_mask)[0]
