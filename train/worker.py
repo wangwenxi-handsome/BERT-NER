@@ -15,7 +15,8 @@ class Worker:
         self.load_model(model, load_checkpoint_path, load_by_state_dict)
         self.save_by_state_dict = load_by_state_dict
         self.loss_func = loss_func
-        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        # self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self.device = "cpu"
 
     def load_model(self, model, load_checkpoint_path, load_by_state_dict):
         if load_checkpoint_path is None:
@@ -78,8 +79,8 @@ class Trainer(Worker):
                 # valid
                 step += 1
                 accum_loss += loss
-                if step % 5 == 0:
-                    print(f"train loss is {accum_loss / 5}")
+                if step % 100 == 0:
+                    print(f"train loss is {accum_loss / 100}")
                     step = 0
                     accum_loss = 0
 

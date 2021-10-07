@@ -2,7 +2,7 @@ import torch.nn as nn
 from transformers import AutoModel
 
 class EnBertLinerSoftmax(nn.Module):
-    def __init__(self, input_num=256, label_num=15):
+    def __init__(self, input_num=768, label_num=15):
         super().__init__()
         self.label_num = label_num
         self.bert = AutoModel.from_pretrained("bert-base-cased")
