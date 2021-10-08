@@ -130,3 +130,5 @@ dmypy.json
 
 debug/
 ./DS_Store
+
+data/
