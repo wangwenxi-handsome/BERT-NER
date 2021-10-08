@@ -44,6 +44,9 @@ class NERProcessor:
         self.max_length = max_length
         self.return_tensors = return_tensors
 
+    def get_data(self):
+        return self.data_cls.get_data()
+
     def get_tensor(self):
         save_file_path = os.path.join("/Users/bytedance/Desktop/xixi-nlp/data", "data.pth")
         if os.path.exists(save_file_path):

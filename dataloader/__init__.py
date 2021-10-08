@@ -40,12 +40,14 @@ def get_ner_dataloader(
     train_shuffle = True,
     num_workers = 0,
     collate_fn = dict_to_list_by_max_len,
+    raw_data = True,
 ):
     default_data_config = eval(data_cls.__name__ + "_config").copy()
     default_data_config.update(data_config)
     default_processor_config = NER_processor_config.copy()
     default_processor_config.update(processor_config)
-    data = processor_cls(data_cls, default_data_config, **default_processor_config).get_tensor()
+    processor = processor_cls(data_cls, default_data_config, **default_processor_config)
+    data = processor.get_tensor()
     # build dataset
     ner_dataset = {}
     for item in data:
@@ -64,4 +66,7 @@ def get_ner_dataloader(
             num_workers = num_workers,
             collate_fn = collate_fn,
         )
-    return ner_dataloader
+    if raw_data:
+        return ner_dataloader, {"data_list": processor.get_data(), "data_tensor": data}
+    else:
+        return ner_dataloader, {}
