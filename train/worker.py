@@ -15,8 +15,7 @@ class Worker:
         self.load_model(model, load_checkpoint_path, load_by_state_dict)
         self.save_by_state_dict = load_by_state_dict
         self.loss_func = loss_func
-        # self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        self.device = "cpu"
+        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     def load_model(self, model, load_checkpoint_path, load_by_state_dict):
         if load_checkpoint_path is None:
@@ -58,11 +57,11 @@ class Trainer(Worker):
 
     def train(self):
         self.model.to(self.device)
-        for e in tqdm(range(self.epoch)):
+        for e in range(self.epoch):
             print(f"#############epoch{e + 1}#############")
             step = 0
             accum_loss = 0
-            for data in self.train_dataloader:
+            for data in tqdm(self.train_dataloader):
                 # zero grad
                 self.opt.zero_grad()
 
@@ -91,18 +90,20 @@ class Trainer(Worker):
                 self.best_loss_epoch = e
                 # save model
                 if e > 3:
-                    self.save_model(f"checkpoint/{e}.pth")
+                    self.save_model(f"/opt/tiger/nlp-xixi/data/{e}.pth")
             elif e - self.best_loss_epoch > 2:
                 break
 
     def rollout(self, dataloader):
-        self.model.eval()
-        loss = 0
-        for data in dataloader:
-            data = {i: data[i].to(self.device) for i in data}
-            label = data["label"]
-            output = self.model(**data)
-            loss += self.loss_func(output.contiguous().view(-1, self.model.label_num), label.contiguous().view(-1))
-        loss /= len(dataloader)
-        self.model.train()
-        return loss
+        with torch.no_grad():
+            self.model.eval()
+            loss = 0
+            for data in dataloader:
+                data = {i: data[i].to(self.device) for i in data}
+                label = data["label"]
+                output = self.model(**data)
+                loss += self.loss_func(output.contiguous().view(-1, self.model.label_num), label.contiguous().view(-1))
+            loss /= len(dataloader)
+            print(f"valid loss is {loss}")
+            self.model.train()
+            return loss
