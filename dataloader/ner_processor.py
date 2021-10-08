@@ -45,7 +45,7 @@ class NERProcessor:
         self.return_tensors = return_tensors
 
     def get_tensor(self):
-        save_file_path = os.path.join("/opt/tiger/nlp-xixi/data", "data.pth")
+        save_file_path = os.path.join("/Users/bytedance/Desktop/xixi-nlp/data", "data.pth")
         if os.path.exists(save_file_path):
             return torch.load(save_file_path)
         else:
