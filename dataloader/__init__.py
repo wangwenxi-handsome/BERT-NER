@@ -1,37 +1,9 @@
 from torch.utils.data import DataLoader
-from transformers import BertTokenizerFast
-
-from dataloader.ace05 import ACE05
-from dataloader.ner_processor import NERProcessor, NERDataSet
-from utils.data import dict_to_list_by_max_len
-
-
-ACE05_config = {
-    "task": "NER",
-    "data_path": "/Users/bytedance/Desktop/nlp-dataset/ace05/json",
-    "train_fn": "train.json",
-    "test_fn": "test.json",
-    "dev_fn": "dev.json",
-    "ner_tag_method": "BIO",
-    "cased": True,
-}
-
-
-NER_processor_config = {
-    "tokenizer_model": "bert-base-cased",
-    "tokenizer_cls": BertTokenizerFast,
-    "is_split_into_words": True,
-    "return_offsets_mapping": True,
-    "padding": "max_length",
-    "truncation": True,
-    "max_length": None,
-    "return_tensors": "pt",
-    "language": "en",
-}
+from dataloader.processor.ner_processor import NERProcessor, NERDataSet
 
 
 def get_ner_dataloader(
-    data_cls = ACE05,
+    data_cls,
     data_config = {},
     processor_cls = NERProcessor,
     processor_config = {},
@@ -39,14 +11,10 @@ def get_ner_dataloader(
     batch_size = 24,
     train_shuffle = True,
     num_workers = 0,
-    collate_fn = dict_to_list_by_max_len,
+    collate_fn = None,
     raw_data = True,
 ):
-    default_data_config = eval(data_cls.__name__ + "_config").copy()
-    default_data_config.update(data_config)
-    default_processor_config = NER_processor_config.copy()
-    default_processor_config.update(processor_config)
-    processor = processor_cls(data_cls, default_data_config, **default_processor_config)
+    processor = processor_cls(data_cls, data_config, **processor_config)
     data = processor.get_tensor()
     # build dataset
     ner_dataset = {}
@@ -67,6 +35,6 @@ def get_ner_dataloader(
             collate_fn = collate_fn,
         )
     if raw_data:
-        return ner_dataloader, {"data_list": processor.get_data(), "data_tensor": data}
+        return ner_dataloader, {"data_list": processor.get_data(), "data_tensor": data, "ner_tag": processor.get_ner_tag()}
     else:
         return ner_dataloader, {}
