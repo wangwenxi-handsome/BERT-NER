@@ -130,4 +130,5 @@ dmypy.json
 
 debug/
 .DS_Store
-*/.DS_Store
+**/.DS_Store
+.DS_Store?
