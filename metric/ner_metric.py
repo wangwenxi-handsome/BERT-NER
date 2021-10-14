@@ -12,7 +12,7 @@ class NERMetric:
         # process output
         self.tmp_output = self.argmax(output, length.numpy().tolist())
         # 处理由于tokenize导致的偏移和占位符
-        self.output = self.offset(self.tmp_output, offset_mapping.numpy().tolist())
+        self.output = self.offset(self.tmp_output, offset_mapping)
         assert len(self.sequence) == len(self.label) == len(self.output)
 
         # change result format
@@ -40,12 +40,13 @@ class NERMetric:
             for i in output:
                 new_output.append(i[1: -1])
         else:
+            offset_mapping = offset_mapping.numpy().tolist()
             for i in range(len(output)):
                 item = output[i]
                 offs = offset_mapping[i]
                 now_output = []
                 j = 0
-                while(j < range(len(item))):
+                while(j < len(item)):
                     # remove start and end
                     if j == 0 or j == len(item) - 1:
                         j += 1

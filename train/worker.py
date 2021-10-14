@@ -85,8 +85,8 @@ class Trainer(Worker):
                 # valid
                 step += 1
                 accum_loss += loss
-                if step % 50 == 0:
-                    print(f"train loss is {accum_loss / 50}")
+                if step % int(len(self.train_dataloader) / 5) == 0:
+                    print(f"train loss is {accum_loss / int(len(self.train_dataloader) / 5)}")
                     step = 0
                     accum_loss = 0
 

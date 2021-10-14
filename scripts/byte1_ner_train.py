@@ -51,7 +51,7 @@ config = {
             "return_tensors": "pt",
         },
         "dataset_cls": NERDataSet,
-        "batch_size": 24,
+        "batch_size": 12,
         "num_workers": 0,
         "collate_fn": dict_to_list_by_max_len,
         "raw_data": True,
@@ -72,7 +72,7 @@ config = {
         "epoch": 50,
         "load_checkpoint_path": None,
         "if_by_state_dict": False,
-        "save_path": "./product/model",
+        "save_path": "./product/data/byte_ner_data_1/checkpoint/",
     },
 }
 
