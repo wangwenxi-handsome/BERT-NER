@@ -78,20 +78,24 @@ class NERMetric:
                 if self.ner_tag.ner_tag_method == "BIO":
                     if self.ner_tag.if_tag_first:
                         if sentence[w][0] == "B":
-                            now_class = sentence[w].split("-")[1]
+                            now_class = sentence[w][2:]
                             start = w
                             w = w + 1
-                            while(sentence[w] == "I-" + now_class and w < len(sentence)):
+                            while(w < len(sentence) and sentence[w] == "I-" + now_class):
                                 w += 1
                             sentence_entity.append((now_class, start, w - 1))
+                        else:
+                            w += 1
                     else:
                         if sentence[w][-1] == "B":
-                            now_class = sentence[w].split("-")[0]
+                            now_class = sentence[w][:-2]
                             start = w
                             w = w + 1
-                            while(sentence[w] == now_class + "-I" and w < len(sentence)):
+                            while(w < len(sentence) and sentence[w] == now_class + "-I"):
                                 w += 1
                             sentence_entity.append((now_class, start, w - 1))
+                        else:
+                            w += 1
                 else:
                     raise NotImplementedError(f"please implement the {self.ner_tag.ner_tag_method} method")
             all_entity.append(sentence_entity)
@@ -108,8 +112,8 @@ class NERMetric:
         tmp_rights = []
         for s in range(len(self.sequence)):
             right = []
-            for w in self.output[s]:
-                if w in self.label[s]:
+            for w in self.outputs[s]:
+                if w in self.labels[s]:
                     right.append(w)
             tmp_rights.append(right)
         
@@ -118,8 +122,8 @@ class NERMetric:
         founds = []
         rights = []
         for s in range(len(self.sequence)):
-            origins.extend(self.label[s])
-            founds.extend(self.output[s])
+            origins.extend(self.labels[s])
+            founds.extend(self.outputs[s])
             rights.extend(tmp_rights[s])
 
         # 找出每类的个数

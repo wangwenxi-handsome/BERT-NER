@@ -12,13 +12,13 @@ from metric.ner_metric import NERMetric
 
 # global args
 model_name = "bert-base-chinese"
-data_path = "product/data/byte_ner1/raw_data.npy"
+data_path = "product/data/byte_ner1/raw_data.pth"
 label_num = 63
 lr = 0.001
 momentum = 0.9
-save_checkpoint_path = "product/data/byte_ner_data_1/checkpoint/"
-load_checkpoint_path = None
-batch_size = 24
+save_checkpoint_path = "product/data/byte_ner1/checkpoint/"
+load_checkpoint_path = "product/data/byte_ner1/checkpoint/13.pth"
+batch_size = 12
 num_workers = 0
 
 if __name__ == "__main__":
@@ -36,15 +36,15 @@ if __name__ == "__main__":
         save_checkpoint_path=save_checkpoint_path,
         load_checkpoint_path=load_checkpoint_path,
     )
-    trainer.train()
+    # trainer.train()
 
     # test
     loss, outputs = trainer.rollout(trainer.test_dataloader)
     metric = NERMetric(
-        sequence = data_gen.get_raw_data_x(),
-        labels = data_gen.get_raw_data_y(),
-        outputs = outputs, 
-        tokenize_length = data_gen.get_tokenize_length(),
+        sequence = data_gen.get_raw_data_x("test"),
+        labels = data_gen.get_raw_data_y("test"),
+        outputs = outputs,
+        tokenize_length = data_gen.get_tokenize_length("test"),
         ner_tag = data_gen.get_ner_tag(),
     )
     print(metric.get_score())
