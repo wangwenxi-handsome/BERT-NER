@@ -52,10 +52,9 @@ class Worker:
 
                 # model forward
                 model_kwargs = dict(inspect.signature(self.model.forward).parameters)
-                model_kwargs.pop("self")
                 model_kwargs = {i: data[i].to(self.device) for i in model_kwargs}
                 labels = data["labels"].to(self.device)
-                output = self.model(**data)
+                output = self.model(**model_kwargs)
 
                 # get loss and step
                 loss = self.loss_func(output.contiguous().view(-1, self.model.label_num), labels.contiguous().view(-1))
@@ -96,7 +95,7 @@ class Worker:
                 model_kwargs.pop("self")
                 model_kwargs = {i: data[i].to(self.device) for i in model_kwargs}
                 labels = data["labels"].to(self.device)
-                output = self.model(**data)
+                output = self.model(**model_kwargs)
                 outputs.append(output.cpu())
                 if self.loss_func is not None:
                     loss += self.loss_func(output.contiguous().view(-1, self.model.label_num), labels.contiguous().view(-1))

@@ -18,7 +18,7 @@ class BYTERDataset(RDataset):
         super(BYTERDataset, self).__init__(split_rate, if_cross_valid, ner_tag_method, cased, if_tag_first)
         self.ner_tag = NERTAG(self.classes, ner_tag_method, if_tag_first)
 
-    def data_precessor(self, data):
+    def preprocess_data(self, data):
         new_data = {"x": [], "y": [], "id": []}
         for d in data:
             d = eval(d)
@@ -54,13 +54,13 @@ class BYTEPreProcessor:
     def __init__(
         self,
         data_path,
+        model_name,
         split_rate = [0.1, 0.1],
-        tokenize_config = {},
     ):
         # weapon prepare!!!
         self.rdataset = BYTERDataset(split_rate = split_rate)
         self.ner_tag = self.rdataset.get_ner_tag()
-        self.tokenize = NERTokenize(ner_tag = self.ner_tag, **tokenize_config)
+        self.tokenize = NERTokenize(ner_tag = self.ner_tag, model_name = model_name, return_offsets_mapping = False)
 
         # self.data["raw"] -> [{data1}, {data2}, {data3}...] 
         # self.data["list"] -> [{"x": , "y": , "id": }, ...]
@@ -77,7 +77,7 @@ class BYTEPreProcessor:
             # read data
             raw_data = self.read_file(data_path)
             # to list
-            data_list = self.rdataset.get_data_with_list_format(self.data)
+            data_list = self.rdataset.get_data_with_list_format(raw_data)
             # to tensor
             data_tensor = []
             for i in data_list:
@@ -97,7 +97,7 @@ class BYTEPreProcessor:
             else:
                 shuffle = False
             dataloader[self.dataloader_name[i]] = DataLoader(
-                MyDataSet(self.data["tensor"][i]), 
+                MyDataSet(**self.data["tensor"][i]), 
                 batch_size = batch_size, 
                 shuffle = shuffle, 
                 num_workers = num_workers,
@@ -118,4 +118,4 @@ class BYTEPreProcessor:
         return self.data["tensor"][self.dataloader_name2id[name]]["length"]
 
     def get_ner_tag(self):
-        return self.rdataset.get_ner_tag()
+        return self.ner_tag

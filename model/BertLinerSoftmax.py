@@ -1,12 +1,12 @@
 import torch.nn as nn
-from transformers import AutoModel, AutoConfig
+from transformers import BertModel, BertConfig
 
 class BertLinerSoftmax(nn.Module):
     def __init__(self, model_name = "bert-base-cased", label_num=15, dropout_rate=0.95):
         super().__init__()
         self.label_num = label_num
-        self.config = AutoConfig.from_pretrained(model_name)
-        self.bert = AutoModel.from_pretrained(model_name, config=self.config)
+        self.config = BertConfig.from_pretrained(model_name)
+        self.bert = BertModel.from_pretrained(model_name, config=self.config)
         self.dropout = nn.Dropout(dropout_rate)
         self.classifier = nn.Linear(self.config.hidden_size, label_num)
 

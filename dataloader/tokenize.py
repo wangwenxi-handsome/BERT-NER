@@ -71,7 +71,7 @@ class NERTokenize:
         data_x = self.tokenizer(
             data["x"],
             is_split_into_words = True, 
-            return_offsets_mapping= True,
+            return_offsets_mapping= self.return_offsets_mapping,
             padding = self.padding,
             truncation = self.truncation,
             max_length = self.max_length,
@@ -87,9 +87,7 @@ class NERTokenize:
         }
         # return offset mapping
         if self.return_offsets_mapping:
-            new_data["offset_mapping"] = new_data["offset_mapping"],
-        else:
-            new_data["offset_mapping"] = None
+            new_data["offset_mapping"] = new_data["offset_mapping"]
         return new_data
 
     def get_modified_tag_and_len(self, data_x, data_y):
