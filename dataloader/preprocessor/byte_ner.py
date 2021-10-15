@@ -1,9 +1,7 @@
-import torch
-from torch.utils.data import DataLoader
 import numpy as np
-from utils.torch_related import MyDataSet, dict_to_list_by_max_len
-from dataloader.tokenize import NERTAG, NERTokenize
-from dataloader.preprocessor.base import RDataset
+
+from dataloader.tokenize import NERTAG
+from dataloader.preprocessor.base import RDataset, BasePreProcessor
 
 
 class BYTERDataset(RDataset):
@@ -24,18 +22,26 @@ class BYTERDataset(RDataset):
             d = eval(d)
             now_sentence = list(d["sentence"])
             now_label = ["O" for _ in range(len(now_sentence))]
-            for i in d["results"]:
-                start = i[0]
-                end = i[1]
-                ner_class = i[2]
-                for j in range(start, end):
-                    if j == start:
-                        now_label[j] = "B-" + ner_class
-                    else:
-                        now_label[j] = "I-" + ner_class
+
+            # 通过异常处理添加y
+            try:
+                for i in d["results"]:
+                    start = i[0]
+                    end = i[1]
+                    ner_class = i[2]
+                    for j in range(start, end):
+                        if j == start:
+                            now_label[j] = "B-" + ner_class
+                        else:
+                            now_label[j] = "I-" + ner_class
+                new_data["y"].append(now_label)
+            except:
+                if "y" in new_data:
+                    new_data.pop("y")
+            
+            # 添加x和id
             new_data["x"].append(now_sentence)
             now_label = [self.ner_tag.tag2id[w] for w in now_label]
-            new_data["y"].append(now_label)
             new_data["id"].append(d["itemID"])
         return new_data
 
@@ -50,72 +56,79 @@ class BYTERDataset(RDataset):
         ]
 
 
-class BYTEPreProcessor:
+class BYTEPreProcessor(BasePreProcessor):
     def __init__(
         self,
-        data_path,
         model_name,
+        data_path,
         split_rate = [0.1, 0.1],
     ):
-        # weapon prepare!!!
-        self.rdataset = BYTERDataset(split_rate = split_rate)
-        self.ner_tag = self.rdataset.get_ner_tag()
-        self.tokenize = NERTokenize(ner_tag = self.ner_tag, model_name = model_name, return_offsets_mapping = False)
-
-        # self.data["raw"] -> [{data1}, {data2}, {data3}...] 
-        # self.data["list"] -> [{"x": , "y": , "id": }, ...]
-        # self.data["tensor"] -> [{"input_ids": [], "labels": []...}, {}...]
+        super(BYTEPreProcessor, self).__init__(
+            rdataset_cls=BYTERDataset,
+            model_name = model_name,
+            data_path = data_path,
+            dataloader_name = ["train", "dev", "test"],
+            split_rate = split_rate,
+        )
         self.data = self.init_data(data_path)
-        self.dataloader_name = ["train", "dev", "test"]
-        self.dataloader_name2id = dict(zip(self.dataloader_name, range(len(self.dataloader_name))))
-    
-    def init_data(self, data_path):
-        if data_path[-4: ] == ".pth":
-            data = torch.load(data_path)
-        else:
-            assert data_path[-4: ] == ".npy"
-            # read data
-            raw_data = self.read_file(data_path)
-            # to list
-            data_list = self.rdataset.get_data_with_list_format(raw_data)
-            # to tensor
-            data_tensor = []
-            for i in data_list:
-                data_tensor.append(self.tokenize.get_data_with_tensor_format(i))
-            data = {"raw": raw_data, "list": data_list, "tensor": data_tensor}
-            torch.save(data, data_path[: -4] + ".pth")
-        return data
 
     def read_file(self, data_path):
         return np.load(data_path).tolist()
 
-    def get_dataloader(self, batch_size, num_workers):
-        dataloader = {}
-        for i in range(len(self.dataloader_name)):
-            if self.dataloader_name[i] == "train":
-                shuffle = True
-            else:
-                shuffle = False
-            dataloader[self.dataloader_name[i]] = DataLoader(
-                MyDataSet(**self.data["tensor"][i]), 
-                batch_size = batch_size, 
-                shuffle = shuffle, 
-                num_workers = num_workers,
-                collate_fn = dict_to_list_by_max_len,
-            )
-        return dataloader
 
-    def get_raw_data_x(self, name):
-        return self.data["list"][self.dataloader_name2id[name]]["x"]
+class BYTETESTPreProcessor(BYTEPreProcessor):
+    def __init__(
+        self,
+        model_name,
+        data_path,   
+    ):
+        super(BYTEPreProcessor, self).__init__(
+            model_name=model_name,
+            data_path = data_path,
+            dataloader_name = ["test"],
+            split_rate = [],
+        )
+        self.data = self.init_data(data_path)
 
-    def get_raw_data_y(self, name):
-        return self.data["list"][self.dataloader_name2id[name]]["y"]
+    # TEST时候的data_path直接就是data的形式
+    def init_data(self, data_path):
+        data_list = []
+        data_list.extend(self.rdataset.get_data_with_list_format(data_path))
+        # 将分好的数据对应到dataloader_name上 
+        assert len(data_list) == len(self.dataloader_name)
+        data_list = {self.dataloader_name[i]: data_list[i] for i in range(len(data_list))}
+        # to tensor
+        data_tensor = {}
+        for i in data_list:
+            data_tensor[i] = self.tokenize.get_data_with_tensor_format(data_list[i])
+        data = {"list": data_list, "tensor": data_tensor}
+        return data
 
-    def get_raw_data_id(self, name):
-        return self.data["list"][self.dataloader_name2id[name]]["id"]
 
-    def get_tokenize_length(self, name):
-        return self.data["tensor"][self.dataloader_name2id[name]]["length"]
+class BYTETrainPreProcessor(BYTEPreProcessor):
+    def __init__(
+        self,
+        model_name,
+        data_path,   
+    ):
+        super(BYTEPreProcessor, self).__init__(
+            model_name=model_name,
+            data_path = data_path,
+            dataloader_name = ["train", "dev"],
+            split_rate = [0.1],
+        )
+        self.data = self.init_data(data_path)
 
-    def get_ner_tag(self):
-        return self.ner_tag
+    # TEST时候的data_path直接就是data的形式
+    def init_data(self, data_path):
+        data_list = []
+        data_list.extend(self.rdataset.get_data_with_list_format(data_path))
+        # 将分好的数据对应到dataloader_name上 
+        assert len(data_list) == len(self.dataloader_name)
+        data_list = {self.dataloader_name[i]: data_list[i] for i in range(len(data_list))}
+        # to tensor
+        data_tensor = {}
+        for i in data_list:
+            data_tensor[i] = self.tokenize.get_data_with_tensor_format(data_list[i])
+        data = {"list": data_list, "tensor": data_tensor}
+        return data

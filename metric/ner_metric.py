@@ -4,102 +4,12 @@ from sklearn.metrics import classification_report
 
 
 class NERMetric:
-    def __init__(self, sequence, labels, outputs, ner_tag, tokenize_length, offset_mapping = None):
-        self.ner_tag = ner_tag
+    def __init__(self, sequence, entity_labels, entity_outputs):
         self.sequence = sequence
-        self.labels = labels
-
-        # argmax
-        self.tmp_outputs = self.argmax(outputs, tokenize_length.numpy().tolist())
-        # 处理由于tokenize导致的偏移和占位符
-        self.outputs = self.offset(self.tmp_outputs, offset_mapping)
-        assert len(self.sequence) == len(self.labels) == len(self.outputs)
-
-        # change result format
-        self.labels = self.change_tag2entity(self.labels)
-        self.outputs = self.change_tag2entity(self.outputs)
-
-        # score
+        self.entity_labels = entity_labels
+        self.entity_outputs = entity_outputs
+        # compute acc, recall, f1
         self.class_info = self.score()
-
-    def argmax(self, output, length):
-        # argmax
-        output = [torch.argmax(i, dim = -1).numpy().tolist() for i in output]
-        # flatten batch
-        new_output = []
-        for i in output:
-            new_output.extend(i)
-        # length
-        for i in range(len(new_output)):
-            new_output[i] = new_output[i][: length[i]]
-        return new_output
-
-    def offset(self, output, offset_mapping):
-        new_output = []
-        if offset_mapping is None:
-            for i in output:
-                # 掐头去尾
-                new_output.append(i[1: -1])
-        else:
-            offset_mapping = offset_mapping.numpy().tolist()
-            for i in range(len(output)):
-                item = output[i]
-                offs = offset_mapping[i]
-                now_output = []
-                j = 0
-                while(j < len(item)):
-                    # remove start and end
-                    if j == 0 or j == len(item) - 1:
-                        j += 1
-                        continue
-                    else:
-                        all_label_for_one_word = [item[j]]
-                        j += 1
-                        while(offs[j][0] != 0):
-                            all_label_for_one_word.append(item[j])
-                            j += 1
-                        now_output.append(self.agg_all_label_for_one_word(all_label_for_one_word))
-                new_output.append(now_output)
-        return new_output
-
-    def agg_all_label_for_one_word(self, label_list):
-        for i in label_list:
-            if i != 0:
-                return i
-        return 0
-
-    def change_tag2entity(self, data_y):
-        all_entity = []
-        for sentence in data_y:
-            sentence_entity = []
-            sentence = [self.ner_tag.id2tag[i] for i in sentence]
-            w = 0
-            while(w < len(sentence)):
-                if self.ner_tag.ner_tag_method == "BIO":
-                    if self.ner_tag.if_tag_first:
-                        if sentence[w][0] == "B":
-                            now_class = sentence[w][2:]
-                            start = w
-                            w = w + 1
-                            while(w < len(sentence) and sentence[w] == "I-" + now_class):
-                                w += 1
-                            sentence_entity.append((now_class, start, w - 1))
-                        else:
-                            w += 1
-                    else:
-                        if sentence[w][-1] == "B":
-                            now_class = sentence[w][:-2]
-                            start = w
-                            w = w + 1
-                            while(w < len(sentence) and sentence[w] == now_class + "-I"):
-                                w += 1
-                            sentence_entity.append((now_class, start, w - 1))
-                        else:
-                            w += 1
-                else:
-                    raise NotImplementedError(f"please implement the {self.ner_tag.ner_tag_method} method")
-            all_entity.append(sentence_entity)
-        return all_entity
 
     def compute(self, origin, found, right):
         recall = 0 if origin == 0 else (right / origin)
@@ -112,8 +22,8 @@ class NERMetric:
         tmp_rights = []
         for s in range(len(self.sequence)):
             right = []
-            for w in self.outputs[s]:
-                if w in self.labels[s]:
+            for w in self.entity_outputs[s]:
+                if w in self.entity_labels[s]:
                     right.append(w)
             tmp_rights.append(right)
         
@@ -122,8 +32,8 @@ class NERMetric:
         founds = []
         rights = []
         for s in range(len(self.sequence)):
-            origins.extend(self.labels[s])
-            founds.extend(self.outputs[s])
+            origins.extend(self.entity_labels[s])
+            founds.extend(self.entity_outputs[s])
             rights.extend(tmp_rights[s])
 
         # 找出每类的个数

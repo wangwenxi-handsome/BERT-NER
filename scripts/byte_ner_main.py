@@ -40,12 +40,11 @@ if __name__ == "__main__":
 
     # test
     loss, outputs = trainer.rollout(trainer.test_dataloader)
-    metric = NERMetric(
-        sequence = data_gen.get_raw_data_x("test"),
-        labels = data_gen.get_raw_data_y("test"),
-        outputs = outputs,
-        tokenize_length = data_gen.get_tokenize_length("test"),
-        ner_tag = data_gen.get_ner_tag(),
+    entity_outputs, entity_labels = data_gen.decode(
+        outputs, 
+        data_gen.get_tokenize_length("test"), 
+        data_gen.get_raw_data_y("test"),
     )
+    metric = NERMetric(data_gen.get_raw_data_x("test"), entity_labels, entity_outputs)
     print(metric.get_score())
     print(metric.get_mean_score())
