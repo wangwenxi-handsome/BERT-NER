@@ -4,20 +4,20 @@ from sklearn.metrics import classification_report
 
 
 class NERMetric:
-    def __init__(self, sequence, label, output, length, ner_tag, offset_mapping = None):
+    def __init__(self, sequence, labels, outputs, ner_tag, tokenize_length, offset_mapping = None):
         self.ner_tag = ner_tag
         self.sequence = sequence
-        self.label = label
+        self.labels = labels
 
-        # process output
-        self.tmp_output = self.argmax(output, length.numpy().tolist())
+        # argmax
+        self.tmp_outputs = self.argmax(outputs, tokenize_length.numpy().tolist())
         # 处理由于tokenize导致的偏移和占位符
-        self.output = self.offset(self.tmp_output, offset_mapping)
-        assert len(self.sequence) == len(self.label) == len(self.output)
+        self.outputs = self.offset(self.tmp_outputs, offset_mapping)
+        assert len(self.sequence) == len(self.labels) == len(self.outputs)
 
         # change result format
-        self.label = self.change_tag2entity(self.label)
-        self.output = self.change_tag2entity(self.output)
+        self.labels = self.change_tag2entity(self.labels)
+        self.outputs = self.change_tag2entity(self.outputs)
 
         # score
         self.class_info = self.score()
@@ -25,7 +25,7 @@ class NERMetric:
     def argmax(self, output, length):
         # argmax
         output = [torch.argmax(i, dim = -1).numpy().tolist() for i in output]
-        # flatten
+        # flatten batch
         new_output = []
         for i in output:
             new_output.extend(i)
@@ -38,6 +38,7 @@ class NERMetric:
         new_output = []
         if offset_mapping is None:
             for i in output:
+                # 掐头去尾
                 new_output.append(i[1: -1])
         else:
             offset_mapping = offset_mapping.numpy().tolist()
