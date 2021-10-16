@@ -19,7 +19,9 @@ class BYTERDataset(RDataset):
     def preprocess_data(self, data):
         new_data = {"x": [], "y": [], "id": []}
         for d in data:
-            d = eval(d)
+            # !!!TODO why is dict
+            if isinstance(d, str):
+                d = eval(d)
             now_sentence = list(d["sentence"])
             now_label = ["O" for _ in range(len(now_sentence))]
 
@@ -34,6 +36,7 @@ class BYTERDataset(RDataset):
                             now_label[j] = "B-" + ner_class
                         else:
                             now_label[j] = "I-" + ner_class
+                now_label = [self.ner_tag.tag2id[w] for w in now_label]
                 new_data["y"].append(now_label)
             except:
                 if "y" in new_data:
@@ -41,7 +44,6 @@ class BYTERDataset(RDataset):
             
             # 添加x和id
             new_data["x"].append(now_sentence)
-            now_label = [self.ner_tag.tag2id[w] for w in now_label]
             new_data["id"].append(d["itemID"])
         return new_data
 
@@ -76,14 +78,15 @@ class BYTEPreProcessor(BasePreProcessor):
         return np.load(data_path).tolist()
 
 
-class BYTETESTPreProcessor(BYTEPreProcessor):
+class BYTETESTPreProcessor(BasePreProcessor):
     def __init__(
         self,
         model_name,
         data_path,   
     ):
-        super(BYTEPreProcessor, self).__init__(
-            model_name=model_name,
+        super(BYTETESTPreProcessor, self).__init__(
+            rdataset_cls=BYTERDataset,
+            model_name = model_name,
             data_path = data_path,
             dataloader_name = ["test"],
             split_rate = [],
@@ -105,21 +108,22 @@ class BYTETESTPreProcessor(BYTEPreProcessor):
         return data
 
 
-class BYTETrainPreProcessor(BYTEPreProcessor):
+class BYTETrainPreProcessor(BasePreProcessor):
     def __init__(
         self,
         model_name,
         data_path,   
     ):
-        super(BYTEPreProcessor, self).__init__(
-            model_name=model_name,
+        super(BYTETrainPreProcessor, self).__init__(
+            rdataset_cls=BYTERDataset,
+            model_name = model_name,
             data_path = data_path,
             dataloader_name = ["train", "dev"],
             split_rate = [0.1],
         )
         self.data = self.init_data(data_path)
 
-    # TEST时候的data_path直接就是data的形式
+    # Train时候的data_path直接就是data的形式
     def init_data(self, data_path):
         data_list = []
         data_list.extend(self.rdataset.get_data_with_list_format(data_path))

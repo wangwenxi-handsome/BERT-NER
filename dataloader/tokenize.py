@@ -49,7 +49,6 @@ class NERTokenize:
         ner_tag,
         model_name = "bert-base-cased",
         tokenizer_cls = BertTokenizerFast,
-        return_offsets_mapping = True,
         padding = "max_length",
         truncation = True,
         max_length = None,
@@ -58,7 +57,6 @@ class NERTokenize:
 
         # tokenizer related
         self.tokenizer = tokenizer_cls.from_pretrained(model_name)
-        self.return_offsets_mapping = return_offsets_mapping
         self.padding = padding
         self.truncation = truncation
         self.max_length = max_length
@@ -71,7 +69,7 @@ class NERTokenize:
         data_x = self.tokenizer(
             data["x"],
             is_split_into_words = True, 
-            return_offsets_mapping= self.return_offsets_mapping,
+            return_offsets_mapping= True,
             padding = self.padding,
             truncation = self.truncation,
             max_length = self.max_length,
@@ -82,15 +80,13 @@ class NERTokenize:
             "input_ids": data_x["input_ids"],
             "token_type_ids": data_x["token_type_ids"],
             "attention_mask": data_x["attention_mask"],
+            "offset_mapping": data_x["offset_mapping"],
             "length": torch.tensor(data_len, dtype=torch.long),
         }
         # if there is y
         if "y" in data:
             data_y = self.get_modified_tag(data_x, data["y"])
-            new_data["labels"] = torch.tensor(data_y, dtype=torch.long),
-        # return offset mapping
-        if self.return_offsets_mapping:
-            new_data["offset_mapping"] = new_data["offset_mapping"]
+            new_data["labels"] = torch.tensor(data_y, dtype=torch.long)
         return new_data
 
     def get_modified_tag(self, data_x, data_y):
@@ -100,22 +96,23 @@ class NERTokenize:
             now_data_y = [0] + data_y[i] + [0]
 
             # 由于一个词被划分成多个导致的label偏移
-            if self.return_offsets_mapping:
-                now_word = 0
-                now_id = 0
-                offset = data_x["offset_mapping"][i]
-                for j in range(len(offset)):
-                    if offset[j][0] == 0:
-                        if now_word >= len(now_data_y):
-                            break
-                        now_id = now_data_y[now_word]
-                        now_word += 1
-                    else:
-                        now_data_y = now_data_y[: now_word] + [self.data_cls.ner_tag.map_B2I(now_id)] + now_data_y[now_word: ]
-                        now_word += 1
+            now_word = 0
+            now_id = 0
+            offset = data_x["offset_mapping"][i]
+            for j in range(len(offset)):
+                if offset[j][0] == 0:
+                    if now_word >= len(now_data_y):
+                        break
+                    now_id = now_data_y[now_word]
+                    now_word += 1
+                else:
+                    now_data_y = now_data_y[: now_word] + [self.ner_tag.map_B2I(now_id)] + now_data_y[now_word: ]
+                    now_word += 1
 
             # padding
             now_data_y += [0] * (len(data_x["input_ids"][i]) - len(now_data_y))
+            # trunc
+            now_data_y = now_data_y[:len(data_x["input_ids"][i])]
             new_data_y.append(now_data_y)
         return new_data_y
 
@@ -133,7 +130,6 @@ class NERTokenize:
 
     # 将输出的tensor或labels转换成[[(class, start, end), ()...], [句子2], [句子3]...]的形式
     def decode(self, outputs, tokenize_length, labels = None, offset_mapping = None):
-        assert len(outputs) == len(labels) == len(tokenize_length)
         # process outputs
         # argmax
         outputs = [torch.argmax(i, dim = -1).numpy().tolist() for i in outputs]
@@ -154,7 +150,6 @@ class NERTokenize:
             entity_labels = self.change_tag2entity(labels)
         else:
             entity_labels = None
-
         return entity_outputs, entity_labels 
 
     def offset(self, outputs, offset_mapping):

@@ -12,12 +12,12 @@ from metric.ner_metric import NERMetric
 
 # global args
 model_name = "bert-base-chinese"
-data_path = "product/data/byte_ner1/raw_data.pth"
+data_path = "product/data/byte_ner1/raw_data.npy"
 label_num = 63
 lr = 0.001
 momentum = 0.9
-save_checkpoint_path = "product/data/byte_ner1/checkpoint/"
-load_checkpoint_path = "product/data/byte_ner1/checkpoint/13.pth"
+save_checkpoint_path = "product/data/byte_ner1/checkpoint"
+load_checkpoint_path = "product/data/byte_ner1/checkpoint/11.pth"
 batch_size = 12
 num_workers = 0
 

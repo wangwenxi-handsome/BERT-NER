@@ -75,17 +75,18 @@ class Worker:
             if self.best_loss is None or valid_loss < self.best_loss:
                 self.best_loss = valid_loss
                 self.best_loss_epoch = e
-                self.best_model = copy.deepcopy(self.model)
+                self.best_model = copy.deepcopy(self.model).cpu()
             elif e - self.best_loss_epoch > 2:
                 if self.save_checkpoint_path is not None:
                     # save model
                     if not os.path.exists(self.save_checkpoint_path):
                         os.mkdir(self.save_checkpoint_path)
-                    self.save_model(self.best_model.cpu(), os.path.join(self.save_checkpoint_path, f"{self.best_loss_epoch}.pth"))
+                    self.save_model(self.best_model, os.path.join(self.save_checkpoint_path, f"{self.best_loss_epoch}.pth"))
                 break
 
     def rollout(self, dataloader):
         outputs = []
+        if_compute_loss = False
         # model forward to get outputs
         with torch.no_grad():
             self.model.eval()
@@ -94,15 +95,16 @@ class Worker:
                 # model forward
                 model_kwargs = dict(inspect.signature(self.model.forward).parameters)
                 model_kwargs = {i: data[i].to(self.device) for i in model_kwargs}
-                labels = data["labels"].to(self.device)
                 output = self.model(**model_kwargs)
                 outputs.append(output.cpu())
-                if self.loss_func is not None:
+                if (self.loss_func is not None) and ("labels" in data):
+                    if_compute_loss = True
+                    labels = data["labels"].to(self.device)
                     loss += self.loss_func(output.contiguous().view(-1, self.model.label_num), labels.contiguous().view(-1))
             self.model.train()
         
         # return loss(None is no loss_func) and outputs
-        if self.loss_func is not None:    
+        if if_compute_loss:
             loss /= len(dataloader)
             print(f"valid loss is {loss}")
         else:
@@ -130,3 +132,22 @@ class Worker:
             torch.save(model.state_dict(), save_path)
         else:
             torch.save(model, save_path)
+
+    def updata_train_kwargs(
+        self, 
+        save_checkpoint_path = None, 
+        train_dataloader = None, 
+        dev_dataloader = None,
+        opt = None,
+        loss_func = None,
+    ):
+        if save_checkpoint_path is not None:
+            self.save_checkpoint_path = save_checkpoint_path
+        if train_dataloader is not None:
+            self.train_dataloader = train_dataloader
+        if dev_dataloader is not None:
+            self.dev_dataloader = dev_dataloader
+        if opt is not None:
+            self.opt = opt
+        if loss_func is not None:
+            self.loss_func = nn.CrossEntropyLoss(ignore_index=0)

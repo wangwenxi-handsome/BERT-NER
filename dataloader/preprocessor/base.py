@@ -1,3 +1,4 @@
+import os
 import torch
 from torch.utils.data import DataLoader, dataloader
 import numpy as np
@@ -116,6 +117,7 @@ class BasePreProcessor:
         # dataloader_name decides how many parts data will be divided into.
         self.dataloader_name = dataloader_name
         self.dataloader_name2id = dict(zip(dataloader_name, range(len(self.dataloader_name))))
+        self.data = None
     
     def init_data(self, data_path):
         if isinstance(data_path, str):
@@ -141,10 +143,10 @@ class BasePreProcessor:
                 data_tensor[i] = self.tokenize.get_data_with_tensor_format(data_list[i])
             data = {"list": data_list, "tensor": data_tensor}
             # save, 取第一个文件的文件名作为名字，但后缀名为.pth
-            torch.save(data, data_path[0][: -4] + ".pth")
+            torch.save(data, os.path.join(os.path.dirname(data_path), "data.pth"))
         return data
 
-    def get_dataloader(self, batch_size, num_workers, collate_fn=dict_to_list_by_max_len):
+    def get_dataloader(self, batch_size, num_workers=0, collate_fn=dict_to_list_by_max_len):
         dataloader = {}
         for i in self.data["tensor"]:
             if i == "train":
