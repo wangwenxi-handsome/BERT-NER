@@ -20,9 +20,16 @@ np.save(os.path.join(fold_path, "raw_data.npy"), data_labeled)
 # data unlabeled
 np.save(os.path.join(fold_path, "unlabeled_data.npy"), c) """
 
-data = np.load(os.path.join(fold_path, "raw_data.npy")).tolist()
+""" data = np.load(os.path.join(fold_path, "raw_data.npy")).tolist()
 print(data[0])
 
 # to dict
 data = np.load(os.path.join(fold_path, "unlabeled_data.npy"), allow_pickle=True).tolist()
-print(data)
+print(data) """
+
+a = [{"data": 1, "result":2}, {"data": 3, "result":2}]
+np.save("test.npy", a)
+
+b = np.load("test.npy", allow_pickle = True).tolist()
+print(b)
+

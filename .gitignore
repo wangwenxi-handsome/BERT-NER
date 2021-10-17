@@ -134,3 +134,4 @@ debug/
 **/checkpoint
 **/*.npy
 **/*.pth
+**/*.bmes

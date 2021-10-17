@@ -72,7 +72,7 @@ class BYTEPreProcessor(BasePreProcessor):
             dataloader_name = ["train", "dev", "test"],
             split_rate = split_rate,
         )
-        self.data = self.init_data(data_path)
+        self.data = self.init_data(self.data_path)
 
     def read_file(self, data_path):
         return np.load(data_path).tolist()
@@ -91,7 +91,7 @@ class BYTETESTPreProcessor(BasePreProcessor):
             dataloader_name = ["test"],
             split_rate = [],
         )
-        self.data = self.init_data(data_path)
+        self.data = self.init_data(self.data_path)
 
     # TEST时候的data_path直接就是data的形式
     def init_data(self, data_path):
@@ -121,7 +121,7 @@ class BYTETrainPreProcessor(BasePreProcessor):
             dataloader_name = ["train", "dev"],
             split_rate = [0.1],
         )
-        self.data = self.init_data(data_path)
+        self.data = self.init_data(self.data_path)
 
     # Train时候的data_path直接就是data的形式
     def init_data(self, data_path):

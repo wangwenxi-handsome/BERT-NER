@@ -118,6 +118,7 @@ class BasePreProcessor:
         self.dataloader_name = dataloader_name
         self.dataloader_name2id = dict(zip(dataloader_name, range(len(self.dataloader_name))))
         self.data = None
+        self.data_path = data_path
     
     def init_data(self, data_path):
         if isinstance(data_path, str):

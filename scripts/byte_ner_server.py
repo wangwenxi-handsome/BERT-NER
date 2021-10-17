@@ -17,6 +17,7 @@ if __name__ == "__main__":
     # test
     predict_data = np.load("product/data/byte_ner1/unlabeled_data.npy", allow_pickle=True).tolist()
     t1 = time.time()
+    # [{"itemID": [(class, start, end), (class, start, end)]}...]
     results = server.predict(predict_data)
     print("predict时间", time.time() - t1)
     print(results)
