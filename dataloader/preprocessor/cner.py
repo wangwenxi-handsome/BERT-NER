@@ -8,6 +8,7 @@ from dataloader.preprocessor.base import RDataset, BasePreProcessor
 class CNERRDataset(RDataset):
     def __init__(
         self, 
+        split_rate,
         ner_tag_method = "BIO",
     ):
         super(CNERRDataset, self).__init__(ner_tag_method, if_tag_first = True)

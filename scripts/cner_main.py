@@ -12,12 +12,12 @@ from metric.ner_metric import NERMetric
 
 # global args
 model_name = "bert-base-chinese"
-folder_path = "/Users/bytedance/Desktop/nlp-dataset/cner"
+folder_path = "product/data/cner/data.pth"
 label_num = 17
 lr = 0.001
 momentum = 0.9
 save_checkpoint_path = "product/data/cner/checkpoint"
-load_checkpoint_path = "product/data/cner/checkpoint/11.pth"
+load_checkpoint_path = None
 batch_size = 12
 num_workers = 0
 
