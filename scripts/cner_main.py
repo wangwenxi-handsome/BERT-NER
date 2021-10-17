@@ -36,7 +36,7 @@ if __name__ == "__main__":
         save_checkpoint_path=save_checkpoint_path,
         load_checkpoint_path=load_checkpoint_path,
     )
-    # trainer.train()
+    trainer.train()
 
     # test
     loss, outputs = trainer.rollout(trainer.test_dataloader)
