@@ -8,9 +8,13 @@ from dataloader.preprocessor.base import RDataset, BasePreProcessor
 class CNERRDataset(RDataset):
     def __init__(
         self, 
+        split_rate = [],
+        if_cross_valid = False,
         ner_tag_method = "BIO",
+        cased = True,
+        if_tag_first = True,
     ):
-        super(CNERRDataset, self).__init__(ner_tag_method, if_tag_first = True)
+        super(CNERRDataset, self).__init__(ner_tag_method = ner_tag_method, if_tag_first = True)
         self.ner_tag = NERTAG(self.classes, ner_tag_method, if_tag_first = True)
 
     def preprocess_data(self, data):

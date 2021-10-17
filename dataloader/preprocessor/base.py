@@ -50,7 +50,6 @@ class RDataset:
             data_keys = list(data.keys())
             data1 = {}
             data2 = {}
-            ()
             split_data1 = (train_test_split(
                 *(data[i] for i in data),
                 test_size = self.split_rate[0], 
@@ -144,7 +143,7 @@ class BasePreProcessor:
                 data_tensor[i] = self.tokenize.get_data_with_tensor_format(data_list[i])
             data = {"list": data_list, "tensor": data_tensor}
             # save, 取第一个文件的文件名作为名字，但后缀名为.pth
-            torch.save(data, os.path.join(os.path.dirname(data_path), "data.pth"))
+            torch.save(data, os.path.join(os.path.dirname(data_path[0]), "data.pth"))
         return data
 
     def get_dataloader(self, batch_size, num_workers=0, collate_fn=dict_to_list_by_max_len):

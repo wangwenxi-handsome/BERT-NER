@@ -17,7 +17,7 @@ label_num = 17
 lr = 0.001
 momentum = 0.9
 save_checkpoint_path = "product/data/cner/checkpoint"
-load_checkpoint_path = "product/data/cner/checkpoint/11.pth"
+load_checkpoint_path = None
 batch_size = 12
 num_workers = 0
 
@@ -36,7 +36,7 @@ if __name__ == "__main__":
         save_checkpoint_path=save_checkpoint_path,
         load_checkpoint_path=load_checkpoint_path,
     )
-    # trainer.train()
+    trainer.train()
 
     # test
     loss, outputs = trainer.rollout(trainer.test_dataloader)
