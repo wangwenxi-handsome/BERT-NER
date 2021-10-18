@@ -10,11 +10,13 @@ from utils.torch_related import MyDataSet, dict_to_list_by_max_len
 
 
 class RDataset:
+    """Process and split the data into the form of list.
+    """
     def __init__(
         self, 
-        split_rate = [],
+        ner_tag_method,
+        split_rate,
         if_cross_valid = False,
-        ner_tag_method = "BIO",
         cased = True,
         if_tag_first = True,
     ):
@@ -26,18 +28,27 @@ class RDataset:
         # for train split(if no dev)
         self.split_rate = split_rate
         self.cross_vaild = if_cross_valid
-    
-    def get_ner_tag(self):
-        return self.ner_tag
 
     def get_data_with_list_format(self, data):
         """preprocess dataset
         in: [{}, {}, {}...]
-        out(get_data): [{"x": , "y": , "id": }, ...]
+            len(in) = the length of raw data.
+            {} means each raw data.
+        out(get_data): [{"x": [], "y": [], "id": []}, ...]
+            len(out) = the splited numbers of data
+            {"x": [[], []...], "y": [], "id": []} means one piece of data.
+            [[], []...] means the data with list format
         """
-        return self.split_data(self.preprocess_data(data))
+        return self._split_data(self._preprocess_data(data))
 
-    def split_data(self, data):
+    def _preprocess_data(self, data):
+        """
+        in: [{}, {}, {}...]
+        out: {"x": , "y": , "id": } (not split)
+        """
+        raise NotImplementedError(f"please implement the data_precessor func")
+
+    def _split_data(self, data):
         """        
         in: {"x": , "y": , "id": }
         out: [{"x": , "y": , "id": }, ...]
@@ -82,12 +93,8 @@ class RDataset:
                 raise ValueError(f"len(split_rate) must <= 2")
         return splited_data
 
-    def preprocess_data(self, data):
-        """
-        in: [{}, {}, {}...]
-        out: {"x": , "y": , "id": } (not split)
-        """
-        raise NotImplementedError(f"please implement the data_precessor func")
+    def get_ner_tag(self):
+        return self.ner_tag
 
     @property
     def classes(self):
@@ -99,27 +106,32 @@ class BasePreProcessor:
         self,
         rdataset_cls,
         model_name,
-        data_path: Union[str, List[str]],
+        ner_tag_method = "BIO",
         dataloader_name = ["train", "dev", "test"],
         split_rate = [],
     ):
+        """before get dataloder, it must call init_data func to initialize the data.
+        """
         # weapon prepare!!!
-        self.rdataset = rdataset_cls(split_rate = split_rate)
+        self.rdataset = rdataset_cls(split_rate = split_rate, ner_tag_method = ner_tag_method)
         self.ner_tag = self.rdataset.get_ner_tag()
         self.tokenize = NERTokenize(ner_tag = self.ner_tag, model_name = model_name)
-
-        # raw_data -> [{data1}, {data2}, {data3}...] 
-        # self.data["list"] -> [{"x": , "y": , "id": }, ...]
-        # self.data["tensor"] -> [{"input_ids": [], "labels": []...}, {}...]
-        # self.data = self.init_data(data_path)
 
         # dataloader_name decides how many parts data will be divided into.
         self.dataloader_name = dataloader_name
         self.dataloader_name2id = dict(zip(dataloader_name, range(len(self.dataloader_name))))
-        self.data = None
-        self.data_path = data_path
+
+    def _read_file(self, data_path: str):
+        """from data_path to a list of data.
+        """
+        raise NotImplementedError(f"please implement the _read_file func")
     
-    def init_data(self, data_path):
+    def init_data(self, data_path: Union[str, List[str]]):
+        """init the data
+        data_path -> [{data1}, {data2}, {data3}...] 
+        self.data["list"] -> [{"x": , "y": , "id": }, ...]
+        self.data["tensor"] -> [{"input_ids": [], "labels": []...}, {}...]
+        """
         if isinstance(data_path, str):
             data_path = [data_path]
         # 只传入了一个数据集
@@ -131,7 +143,7 @@ class BasePreProcessor:
             data_list = []
             for dp in data_path:
                 # read data
-                raw_data = self.read_file(dp)
+                raw_data = self._read_file(dp)
                 # to list
                 data_list.extend(self.rdataset.get_data_with_list_format(raw_data))
             # 将分好的数据对应到dataloader_name上 
@@ -144,9 +156,14 @@ class BasePreProcessor:
             data = {"list": data_list, "tensor": data_tensor}
             # save, 取第一个文件的文件名作为名字，但后缀名为.pth
             torch.save(data, os.path.join(os.path.dirname(data_path[0]), "data.pth"))
-        return data
+        self.data = data
 
-    def get_dataloader(self, batch_size, num_workers=0, collate_fn=dict_to_list_by_max_len):
+    def get_dataloader(
+        self, 
+        batch_size, 
+        num_workers=0, 
+        collate_fn=dict_to_list_by_max_len
+    ):
         dataloader = {}
         for i in self.data["tensor"]:
             if i == "train":
@@ -176,9 +193,6 @@ class BasePreProcessor:
 
     def get_ner_tag(self):
         return self.ner_tag
-
-    def read_file(self, data_path):
-        raise NotImplementedError(f"please implement the read_file func")
 
     def decode(self, outputs, tokenize_length, labels = None, offset_mapping = None):
         return self.tokenize.decode(outputs, tokenize_length, labels, offset_mapping)

@@ -17,14 +17,15 @@ label_num = 63
 lr = 0.001
 momentum = 0.9
 save_checkpoint_path = "product/data/byte_ner1/checkpoint"
-load_checkpoint_path = "product/data/byte_ner1/checkpoint/11.pth"
+load_checkpoint_path = None
 batch_size = 12
 num_workers = 0
 
 if __name__ == "__main__":
     # train
     setup_seed(42)
-    data_gen = BYTEPreProcessor(data_path=data_path, model_name=model_name)
+    data_gen = BYTEPreProcessor(model_name=model_name)
+    data_gen.init_data(data_path)
     model = BertLinerSoftmax(model_name=model_name, label_num=label_num)
     optimizer = optim.SGD(model.parameters(), lr=lr, momentum=momentum)
     loss_func = nn.CrossEntropyLoss(ignore_index=0)
@@ -36,7 +37,7 @@ if __name__ == "__main__":
         save_checkpoint_path=save_checkpoint_path,
         load_checkpoint_path=load_checkpoint_path,
     )
-    # trainer.train()
+    trainer.train()
 
     # test
     loss, outputs = trainer.rollout(trainer.test_dataloader)

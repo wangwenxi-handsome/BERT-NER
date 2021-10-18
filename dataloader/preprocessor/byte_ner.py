@@ -7,16 +7,13 @@ from dataloader.preprocessor.base import RDataset, BasePreProcessor
 class BYTERDataset(RDataset):
     def __init__(
         self, 
-        split_rate = [],
-        if_cross_valid = False,
+        split_rate = [0.8, 0.1, 0.1],
         ner_tag_method = "BIO",
-        cased = True,
-        if_tag_first = True,
     ):
-        super(BYTERDataset, self).__init__(split_rate, if_cross_valid, ner_tag_method, cased, if_tag_first)
-        self.ner_tag = NERTAG(self.classes, ner_tag_method, if_tag_first)
+        super(BYTERDataset, self).__init__(split_rate = split_rate, ner_tag_method = ner_tag_method)
+        self.ner_tag = NERTAG(self.classes, ner_tag_method)
 
-    def preprocess_data(self, data):
+    def _preprocess_data(self, data):
         new_data = {"x": [], "y": [], "id": []}
         for d in data:
             # !!!TODO why is dict
@@ -62,19 +59,18 @@ class BYTEPreProcessor(BasePreProcessor):
     def __init__(
         self,
         model_name,
-        data_path,
+        ner_tag_method = "BIO",
         split_rate = [0.1, 0.1],
     ):
         super(BYTEPreProcessor, self).__init__(
             rdataset_cls=BYTERDataset,
             model_name = model_name,
-            data_path = data_path,
             dataloader_name = ["train", "dev", "test"],
             split_rate = split_rate,
+            ner_tag_method = ner_tag_method,
         )
-        self.data = self.init_data(self.data_path)
 
-    def read_file(self, data_path):
+    def _read_file(self, data_path):
         return np.load(data_path).tolist()
 
 
@@ -82,16 +78,15 @@ class BYTETESTPreProcessor(BasePreProcessor):
     def __init__(
         self,
         model_name,
-        data_path,   
+        ner_tag_method = "BIO",
     ):
         super(BYTETESTPreProcessor, self).__init__(
             rdataset_cls=BYTERDataset,
             model_name = model_name,
-            data_path = data_path,
             dataloader_name = ["test"],
             split_rate = [],
+            ner_tag_method = ner_tag_method,
         )
-        self.data = self.init_data(self.data_path)
 
     # TEST时候的data_path直接就是data的形式
     def init_data(self, data_path):
@@ -112,16 +107,16 @@ class BYTETrainPreProcessor(BasePreProcessor):
     def __init__(
         self,
         model_name,
-        data_path,   
+        split_rate = [0.1],
+        ner_tag_method = "BIO",
     ):
         super(BYTETrainPreProcessor, self).__init__(
             rdataset_cls=BYTERDataset,
             model_name = model_name,
-            data_path = data_path,
             dataloader_name = ["train", "dev"],
-            split_rate = [0.1],
+            split_rate = split_rate,
+            ner_tag_method = ner_tag_method,
         )
-        self.data = self.init_data(self.data_path)
 
     # Train时候的data_path直接就是data的形式
     def init_data(self, data_path):

@@ -12,7 +12,7 @@ from metric.ner_metric import NERMetric
 
 # global args
 model_name = "bert-base-chinese"
-folder_path = "/Users/bytedance/Desktop/nlp-dataset/cner"
+folder_name = "product/data/cner"
 label_num = 17
 lr = 0.001
 momentum = 0.9
@@ -24,7 +24,8 @@ num_workers = 0
 if __name__ == "__main__":
     # train
     setup_seed(42)
-    data_gen = CNERPreProcessor(folder_name=folder_path, model_name=model_name)
+    data_gen = CNERPreProcessor(model_name=model_name)
+    data_gen.init_data(folder_name=folder_name)
     model = BertLinerSoftmax(model_name=model_name, label_num=label_num)
     optimizer = optim.SGD(model.parameters(), lr=lr, momentum=momentum)
     loss_func = nn.CrossEntropyLoss(ignore_index=0)

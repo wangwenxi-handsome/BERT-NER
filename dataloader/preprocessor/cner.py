@@ -8,23 +8,20 @@ from dataloader.preprocessor.base import RDataset, BasePreProcessor
 class CNERRDataset(RDataset):
     def __init__(
         self, 
+        ner_tag_method,
         split_rate = [],
-        if_cross_valid = False,
-        ner_tag_method = "BIO",
-        cased = True,
-        if_tag_first = True,
     ):
-        super(CNERRDataset, self).__init__(ner_tag_method = ner_tag_method, if_tag_first = True)
-        self.ner_tag = NERTAG(self.classes, ner_tag_method, if_tag_first = True)
+        super(CNERRDataset, self).__init__(split_rate = split_rate, ner_tag_method = ner_tag_method)
+        self.ner_tag = NERTAG(self.classes, ner_tag_method)
 
-    def preprocess_data(self, data):
+    def _preprocess_data(self, data):
         new_data = {"x": [], "y": [], "id": []}
         new_data["x"] = data[0]
-        new_data["y"] = self.add_ner_tag(data[1])
+        new_data["y"] = self._add_ner_tag(data[1])
         new_data["id"] = list(range(len(new_data["x"])))
         return new_data
 
-    def add_ner_tag(self, data_y):
+    def _add_ner_tag(self, data_y):
         new_data_y = []
         for i in data_y:
             tmp_data_y = []
@@ -54,29 +51,34 @@ class CNERPreProcessor(BasePreProcessor):
     def __init__(
         self,
         model_name,
-        folder_name,
+        ner_tag_method = "BIO",
         train_fn = "train.char.bmes",
         dev_fn = "dev.char.bmes",
         test_fn = "test.char.bmes",
     ):
+        super(CNERPreProcessor, self).__init__(
+            rdataset_cls = CNERRDataset,
+            model_name = model_name,
+            ner_tag_method = ner_tag_method,
+            dataloader_name = ["train", "dev", "test"],
+            split_rate = [],
+        )
+        self.train_fn = train_fn
+        self.dev_fn = dev_fn
+        self.test_fn = test_fn
+
+    def init_data(self, folder_name: str):
         if folder_name[-4:] == ".pth":
             data_path = folder_name
         else:
             data_path = [
-                os.path.join(folder_name, train_fn), 
-                os.path.join(folder_name, dev_fn), 
-                os.path.join(folder_name, test_fn), 
+                os.path.join(folder_name, self.train_fn), 
+                os.path.join(folder_name, self.dev_fn), 
+                os.path.join(folder_name, self.test_fn), 
             ]
-        super(CNERPreProcessor, self).__init__(
-            rdataset_cls=CNERRDataset,
-            model_name = model_name,
-            data_path = data_path,
-            dataloader_name = ["train", "dev", "test"],
-            split_rate = [],
-        )
-        self.data = self.init_data(self.data_path)
+        super(CNERPreProcessor, self).init_data(data_path)
 
-    def read_file(self, data_path):
+    def _read_file(self, data_path):
         data_x = []
         data_y = []
         tmp_x = []
