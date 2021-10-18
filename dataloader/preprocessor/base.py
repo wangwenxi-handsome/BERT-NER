@@ -137,7 +137,7 @@ class BasePreProcessor:
         # 只传入了一个数据集
         if len(data_path) == 1 and data_path[0][-4: ] == ".pth":
             # 是以已经处理过的数据
-            data = torch.load(data_path)
+            data = torch.load(data_path[0])
         # 未处理过
         else:
             data_list = []
