@@ -13,7 +13,7 @@ from metric.ner_metric import NERMetric
 # global args
 model_name = "bert-base-chinese"
 folder_name = "product/data/cner"
-label_num = 17
+label_num = 25
 lr = 0.001
 momentum = 0.9
 save_checkpoint_path = "product/data/cner/checkpoint"

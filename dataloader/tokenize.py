@@ -201,7 +201,7 @@ class NERTokenize:
             sentence = [self.ner_tag.map_id2tag(i) for i in sentence]
             w = 0
             while(w < len(sentence)):
-                if self.ner_tag.get_ner_tag_method() == "BIO":
+                if self.ner_tag.get_ner_tag_method() == "BIO" or self.ner_tag.get_ner_tag_method() == "BIOS":
                     if self.ner_tag.get_if_tag_first():
                         if sentence[w][0] == "B":
                             now_class = sentence[w][2:]
@@ -210,6 +210,10 @@ class NERTokenize:
                             while(w < len(sentence) and sentence[w] == "I-" + now_class):
                                 w += 1
                             sentence_entity.append((now_class, start, w - 1))
+                        elif sentence[w][0] == "S":
+                            now_class = sentence[w][2:]
+                            sentence_entity.append((now_class, w, w))
+                            w += 1
                         else:
                             w += 1
                     else:
@@ -220,6 +224,10 @@ class NERTokenize:
                             while(w < len(sentence) and sentence[w] == now_class + "-I"):
                                 w += 1
                             sentence_entity.append((now_class, start, w - 1))
+                        elif sentence[w][-1] == "S":
+                            now_class = sentence[w][:-2]
+                            sentence_entity.append((now_class, w, w))
+                            w += 1
                         else:
                             w += 1
                 else:

@@ -41,7 +41,7 @@ class BYTENERServer:
         self.train_data_gen.init_data(data)
         # 设置worker的训练参数
         new_dataloader = self.train_data_gen.get_dataloader(batch_size=self.batch_size)
-        self.trainer.updata_train_kwargs(
+        self.trainer.update_train_kwargs(
             os.path.dirname(self.load_checkpoint_path),
             new_dataloader["train"],
             new_dataloader["dev"],

@@ -4,6 +4,7 @@ import inspect
 from tqdm import tqdm
 import torch
 import torch.nn as nn
+from torch.utils.tensorboard import SummaryWriter   
 
 
 class Worker:
@@ -41,6 +42,9 @@ class Worker:
         self.best_loss_epoch = None
         self.best_model = None
 
+        # tensorboard
+        self.writer = SummaryWriter('product/log/')
+
     def train(self):
         for e in range(self.epoch):
             print(f"This is epoch{e}#")
@@ -65,7 +69,9 @@ class Worker:
                 step += 1
                 accum_loss += loss
                 if step % int(len(self.train_dataloader) / 5) == 0:
-                    print(f"train loss is {accum_loss / int(len(self.train_dataloader) / 5)}")
+                    temp_loss = accum_loss / int(len(self.train_dataloader) / 5)
+                    self.writer.add_scalar('loss', temp_loss)
+                    print(f"train loss is {temp_loss}")
                     step = 0
                     accum_loss = 0
 
@@ -133,7 +139,7 @@ class Worker:
         else:
             torch.save(model, save_path)
 
-    def updata_train_kwargs(
+    def update_train_kwargs(
         self, 
         save_checkpoint_path = None, 
         train_dataloader = None, 

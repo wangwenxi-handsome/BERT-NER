@@ -1,5 +1,4 @@
 import os
-import numpy as np
 
 from dataloader.tokenize import NERTAG
 from dataloader.preprocessor.base import RDataset, BasePreProcessor
@@ -35,6 +34,14 @@ class CNERRDataset(RDataset):
                         tmp_data_y.append(self.ner_tag.tag2id["I" + j[1:]])
                     else:
                         tmp_data_y.append(self.ner_tag.tag2id[j])
+            elif self.ner_tag_method == "BIOS":
+                for j in i:
+                    if j[0] == "M":
+                        tmp_data_y.append(self.ner_tag.tag2id["I" + j[1:]])
+                    elif j[0] == "E":
+                        tmp_data_y.append(self.ner_tag.tag2id["I" + j[1:]])
+                    else:
+                        tmp_data_y.append(self.ner_tag.tag2id[j])
             elif self.ner_tag_method == "BMESO":
                 tmp_data_y = [self.ner_tag.tag2id[j] for j in i]
             else:
@@ -51,7 +58,7 @@ class CNERPreProcessor(BasePreProcessor):
     def __init__(
         self,
         model_name,
-        ner_tag_method = "BIO",
+        ner_tag_method = "BIOS",
         train_fn = "train.char.bmes",
         dev_fn = "dev.char.bmes",
         test_fn = "test.char.bmes",
