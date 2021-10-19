@@ -120,6 +120,7 @@ class Worker:
             self.model.train()
         
         # return outputs and loss(None is no labels)
+        loss_mean = None
         if loss_sum is not None:
             loss_mean = loss_sum / len(dataloader)
             print(f"valid loss is {loss_mean}")
