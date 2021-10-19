@@ -1,6 +1,5 @@
 import torch
 from collections import Counter
-from sklearn.metrics import classification_report
 
 
 class NERMetric:
@@ -11,10 +10,10 @@ class NERMetric:
         # compute acc, recall, f1
         self.class_info = self.score()
 
-    def compute(self, origin, found, right):
+    def _compute(self, origin, found, right):
         recall = 0 if origin == 0 else (right / origin)
         precision = 0 if found == 0 else (right / found)
-        f1 = 0. if recall + precision == 0 else (2 * precision * recall) / (precision + recall)
+        f1 = 0 if recall + precision == 0 else (2 * precision * recall) / (precision + recall)
         return recall, precision, f1
 
     def score(self):
@@ -45,12 +44,12 @@ class NERMetric:
             origin = count
             found = found_counter.get(type_, 0)
             right = right_counter.get(type_, 0)
-            recall, precision, f1 = self.compute(origin, found, right)
+            recall, precision, f1 = self._compute(origin, found, right)
             class_info[type_] = {"acc": round(precision, 4), "recall": round(recall, 4), "f1": round(f1, 4)}
         origin = len(origins)
         found = len(founds)
         right = len(rights)
-        recall, precision, f1 = self.compute(origin, found, right)
+        recall, precision, f1 = self._compute(origin, found, right)
         class_info["all"] = {"acc": precision, "recall": recall, "f1": f1}
         return class_info
 
