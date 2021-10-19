@@ -14,11 +14,11 @@ from metric.ner_metric import NERMetric
 model_name = "bert-base-chinese"
 folder_name = "product/data/cner/data.pth"
 label_num = 25
-lr = 0.001
+lr = 3e-5
 momentum = 0.9
 save_checkpoint_path = "product/data/cner/checkpoint"
 load_checkpoint_path = None
-batch_size = 12
+batch_size = 24
 num_workers = 0
 
 if __name__ == "__main__":
@@ -35,10 +35,10 @@ if __name__ == "__main__":
         save_checkpoint_path=save_checkpoint_path,
         load_checkpoint_path=load_checkpoint_path,
     )
-    trainer.train()
+    # trainer.train()
 
     # test
-    loss, outputs = trainer.rollout(trainer.test_dataloader)
+    outputs, loss = trainer.rollout(trainer.test_dataloader)
     entity_outputs, entity_labels = data_gen.decode(
         outputs, 
         data_gen.get_tokenize_length("test"), 
