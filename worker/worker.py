@@ -113,7 +113,7 @@ class Worker:
                 output, loss = self.model(**model_input)
                 outputs.append(output.cpu())
                 if loss is not None:
-                    if loss_sum is not None:
+                    if loss_sum is None:
                         loss_sum = loss
                     else:
                         loss_sum += loss
