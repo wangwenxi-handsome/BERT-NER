@@ -16,9 +16,6 @@ class BYTERDataset(RDataset):
     def _preprocess_data(self, data):
         new_data = {"x": [], "y": [], "id": []}
         for d in data:
-            # !!!TODO why is dict
-            if isinstance(d, str):
-                d = eval(d)
             now_sentence = list(d["sentence"])
             now_label = ["O" for _ in range(len(now_sentence))]
 
@@ -71,7 +68,7 @@ class BYTEPreProcessor(BasePreProcessor):
         )
 
     def _read_file(self, data_path):
-        return np.load(data_path).tolist()
+        return np.load(data_path, allow_pickle=True).tolist()
 
 
 class BYTETESTPreProcessor(BasePreProcessor):
