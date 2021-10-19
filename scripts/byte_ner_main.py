@@ -12,7 +12,7 @@ from metric.ner_metric import NERMetric
 
 # global args
 model_name = "bert-base-chinese"
-data_path = "product/data/byte_ner1/raw_data.npy"
+data_path = "./product/data/byte_ner1/con_unchecked1019.npy"
 label_num = 63
 lr = 0.001
 momentum = 0.9
@@ -28,7 +28,6 @@ if __name__ == "__main__":
     data_gen.init_data(data_path)
     model = BertLinerSoftmax(model_name=model_name, loss_func="ce", label_num=label_num)
     optimizer = optim.SGD(model.parameters(), lr=lr, momentum=momentum)
-    loss_func = nn.CrossEntropyLoss(ignore_index=0)
     trainer = Worker(
         optimizer=optimizer, 
         dataloader=data_gen.get_dataloader(batch_size=batch_size, num_workers=num_workers), 
