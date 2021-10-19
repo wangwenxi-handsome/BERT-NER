@@ -26,11 +26,10 @@ if __name__ == "__main__":
     setup_seed(42)
     data_gen = BYTEPreProcessor(model_name=model_name)
     data_gen.init_data(data_path)
-    model = BertLinerSoftmax(model_name=model_name, label_num=label_num)
+    model = BertLinerSoftmax(model_name=model_name, loss_func="ce", label_num=label_num)
     optimizer = optim.SGD(model.parameters(), lr=lr, momentum=momentum)
     loss_func = nn.CrossEntropyLoss(ignore_index=0)
     trainer = Worker(
-        loss_func=loss_func, 
         optimizer=optimizer, 
         dataloader=data_gen.get_dataloader(batch_size=batch_size, num_workers=num_workers), 
         model=model, 

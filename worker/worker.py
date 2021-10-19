@@ -15,7 +15,6 @@ class Worker:
         model: nn.Module = None,
         dataloader = {},
         optimizer = None, 
-        loss_func = None,
         if_by_state_dict: bool = False,
         load_checkpoint_path: str = None,
         save_checkpoint_path: str = None,
@@ -29,9 +28,8 @@ class Worker:
         self.dev_dataloader = dataloader.get("dev", None)
         self.test_dataloader = dataloader.get("test", None)
 
-        # torch related. model, loss, opt with device.
+        # torch related. model, opt with device.
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        self.loss_func = loss_func
         self.opt = optimizer
         self.if_by_state_dict = if_by_state_dict
         self.save_checkpoint_path = save_checkpoint_path
@@ -57,12 +55,16 @@ class Worker:
 
                 # model forward
                 model_kwargs = dict(inspect.signature(self.model.forward).parameters)
-                model_kwargs = {i: data[i].to(self.device) for i in model_kwargs}
-                labels = data["labels"].to(self.device)
-                output = self.model(**model_kwargs)
+                model_input = {}
+                for i in model_kwargs:
+                    tmp_input = data.get(i, None)
+                    if tmp_input is not None:
+                        model_input[i] = tmp_input.to(self.device)
+                    else:
+                        model_input[i] = None
+                output, loss = self.model(**model_input)
 
-                # get loss and step
-                loss = self.loss_func(output.contiguous().view(-1, self.model.label_num), labels.contiguous().view(-1))
+                # step
                 loss.backward()
                 self.opt.step()
 
@@ -78,7 +80,7 @@ class Worker:
                     accum_loss = 0
 
             # valid
-            valid_loss, _ = self.rollout(self.dev_dataloader)
+            outputs, valid_loss = self.rollout(self.dev_dataloader)
             # if best model
             if self.best_loss is None or valid_loss < self.best_loss:
                 self.best_loss = valid_loss
@@ -94,30 +96,34 @@ class Worker:
 
     def rollout(self, dataloader):
         outputs = []
-        if_compute_loss = False
         # model forward to get outputs
         with torch.no_grad():
             self.model.eval()
-            loss = 0
+            loss_sum = None
             for data in dataloader:
                 # model forward
                 model_kwargs = dict(inspect.signature(self.model.forward).parameters)
-                model_kwargs = {i: data[i].to(self.device) for i in model_kwargs}
-                output = self.model(**model_kwargs)
+                model_input = {}
+                for i in model_kwargs:
+                    tmp_input = data.get(i, None)
+                    if tmp_input is not None:
+                        model_input[i] = tmp_input.to(self.device)
+                    else:
+                        model_input[i] = None
+                output, loss = self.model(**model_input)
                 outputs.append(output.cpu())
-                if (self.loss_func is not None) and ("labels" in data):
-                    if_compute_loss = True
-                    labels = data["labels"].to(self.device)
-                    loss += self.loss_func(output.contiguous().view(-1, self.model.label_num), labels.contiguous().view(-1))
+                if loss is not None:
+                    if loss_sum is not None:
+                        loss_sum = loss
+                    else:
+                        loss_sum += loss
             self.model.train()
         
-        # return loss(None is no loss_func) and outputs
-        if if_compute_loss:
-            loss /= len(dataloader)
-            print(f"valid loss is {loss}")
-        else:
-            loss = None
-        return loss, outputs
+        # return outputs and loss(None is no labels)
+        if loss_sum is not None:
+            loss_mean = loss_sum / len(dataloader)
+            print(f"valid loss is {loss_mean}")
+        return outputs, loss_mean
 
     def load_model(self, model, load_checkpoint_path, if_by_state_dict):
         """load_checkpoint_path have high prority.
@@ -142,12 +148,11 @@ class Worker:
             torch.save(model, save_path)
 
     def update_train_kwargs(
-        self, 
+        self,
         save_checkpoint_path = None, 
         train_dataloader = None, 
         dev_dataloader = None,
         opt = None,
-        loss_func = None,
     ):
         if save_checkpoint_path is not None:
             self.save_checkpoint_path = save_checkpoint_path
@@ -157,5 +162,3 @@ class Worker:
             self.dev_dataloader = dev_dataloader
         if opt is not None:
             self.opt = opt
-        if loss_func is not None:
-            self.loss_func = nn.CrossEntropyLoss(ignore_index=0)
