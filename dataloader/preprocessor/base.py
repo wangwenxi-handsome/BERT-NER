@@ -17,11 +17,9 @@ class RDataset:
         ner_tag_method,
         split_rate,
         if_cross_valid = False,
-        cased = True,
         if_tag_first = True,
     ):
         # ner precess
-        self.cased = cased
         self.ner_tag_method = ner_tag_method
         self.if_tag_first = if_tag_first
 

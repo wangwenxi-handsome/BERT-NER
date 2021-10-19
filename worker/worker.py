@@ -46,6 +46,7 @@ class Worker:
         self.writer = SummaryWriter('product/log/')
 
     def train(self):
+        total_step = 0
         for e in range(self.epoch):
             print(f"This is epoch{e}#")
             step = 0
@@ -68,9 +69,10 @@ class Worker:
                 # print loss every 1/5
                 step += 1
                 accum_loss += loss
+                total_step += 1
+                self.writer.add_scalar("loss", loss, total_step)
                 if step % int(len(self.train_dataloader) / 5) == 0:
                     temp_loss = accum_loss / int(len(self.train_dataloader) / 5)
-                    self.writer.add_scalar('loss', temp_loss)
                     print(f"train loss is {temp_loss}")
                     step = 0
                     accum_loss = 0

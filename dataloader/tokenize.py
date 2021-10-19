@@ -60,6 +60,7 @@ class NERTokenize:
         self,
         ner_tag,
         model_name,
+        cased = True,
         tokenizer_cls = BertTokenizerFast,
         padding = "max_length",
         truncation = True,
@@ -68,7 +69,7 @@ class NERTokenize:
         self.ner_tag = ner_tag
 
         # tokenizer related
-        self.tokenizer = tokenizer_cls.from_pretrained(model_name)
+        self.tokenizer = tokenizer_cls.from_pretrained(model_name, do_lower_case = cased)
         self.padding = padding
         self.truncation = truncation
         self.max_length = max_length
