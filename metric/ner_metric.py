@@ -41,10 +41,10 @@ class NERMetric:
         found_counter = Counter([x[0] for x in founds])
         right_counter = Counter([x[0] for x in rights])
         for type_, count in origin_counter.items():
-            origin = count
-            found = found_counter.get(type_, 0)
-            right = right_counter.get(type_, 0)
-            recall, precision, f1 = self._compute(origin, found, right)
+            class_origin = count
+            class_found = found_counter.get(type_, 0)
+            class_right = right_counter.get(type_, 0)
+            recall, precision, f1 = self._compute(class_origin, class_found, class_right)
             class_info[type_] = {"acc": round(precision, 4), "recall": round(recall, 4), "f1": round(f1, 4)}
         origin = len(origins)
         found = len(founds)

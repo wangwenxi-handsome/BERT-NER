@@ -26,19 +26,19 @@ if __name__ == "__main__":
     setup_seed(42)
     data_gen = BYTEPreProcessor(model_name=model_name)
     data_gen.init_data(data_path)
+    dataloader = data_gen.get_dataloader(batch_size=batch_size, num_workers=num_workers)
     model = BertLinerSoftmax(model_name=model_name, loss_func="ce", label_num=label_num)
     optimizer = optim.SGD(model.parameters(), lr=lr, momentum=momentum)
     trainer = Worker(
-        optimizer=optimizer, 
-        dataloader=data_gen.get_dataloader(batch_size=batch_size, num_workers=num_workers), 
-        model=model, 
-        save_checkpoint_path=save_checkpoint_path,
-        load_checkpoint_path=load_checkpoint_path,
+        optimizer = optimizer, 
+        model = model, 
+        save_checkpoint_path = save_checkpoint_path,
+        load_checkpoint_path = load_checkpoint_path,
     )
-    trainer.train()
+    trainer.train(dataloader["train"], dataloader["dev"])
 
     # test
-    loss, outputs = trainer.rollout(trainer.test_dataloader)
+    loss, outputs = trainer.rollout(dataloader["test"])
     entity_outputs, entity_labels = data_gen.decode(
         outputs, 
         data_gen.get_tokenize_length("test"), 

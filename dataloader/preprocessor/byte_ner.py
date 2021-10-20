@@ -8,7 +8,7 @@ class BYTERDataset(RDataset):
     def __init__(
         self, 
         split_rate = [0.8, 0.1, 0.1],
-        ner_tag_method = "BIO",
+        ner_tag_method = "BIOS",
     ):
         super(BYTERDataset, self).__init__(split_rate = split_rate, ner_tag_method = ner_tag_method)
         self.ner_tag = NERTAG(self.classes, ner_tag_method)
@@ -25,12 +25,15 @@ class BYTERDataset(RDataset):
                     start = i[0]
                     end = i[1]
                     ner_class = i[2]
-                    for j in range(start, end):
-                        if j == start:
-                            now_label[j] = "B-" + ner_class
-                        else:
-                            now_label[j] = "I-" + ner_class
-                now_label = [self.ner_tag.tag2id[w] for w in now_label]
+                    if self.ner_tag_method == "BIOS" and end - start == 1:
+                        now_label[start] = "S-" + ner_class
+                    else:
+                        for j in range(start, end):
+                            if j == start:
+                                now_label[j] = "B-" + ner_class
+                            else:
+                                now_label[j] = "I-" + ner_class
+                # now_label = [self.ner_tag.tag2id[w] for w in now_label]
                 new_data["y"].append(now_label)
             except:
                 if "y" in new_data:
@@ -56,7 +59,7 @@ class BYTEPreProcessor(BasePreProcessor):
     def __init__(
         self,
         model_name,
-        ner_tag_method = "BIO",
+        ner_tag_method = "BIOS",
         split_rate = [0.1, 0.1],
     ):
         super(BYTEPreProcessor, self).__init__(

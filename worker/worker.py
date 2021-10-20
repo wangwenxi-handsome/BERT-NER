@@ -4,6 +4,7 @@ import inspect
 from tqdm import tqdm
 import torch
 import torch.nn as nn
+import torch.distributed as dist
 from torch.utils.tensorboard import SummaryWriter   
 
 
@@ -12,28 +13,26 @@ class Worker:
     """
     def __init__(
         self, 
-        model: nn.Module = None,
-        dataloader = {},
+        device,
+        if_DPP_mode,
+        model: nn.Module,
         optimizer = None, 
-        if_by_state_dict: bool = False,
-        load_checkpoint_path: str = None,
         save_checkpoint_path: str = None,
+        if_by_state_dict: bool = False,
         epoch = 50,
     ):
         # train kwargs
         self.epoch = epoch
 
-        # data
-        self.train_dataloader = dataloader.get("train", None)
-        self.dev_dataloader = dataloader.get("dev", None)
-        self.test_dataloader = dataloader.get("test", None)
+        # device
+        self.device = device
+        self.if_DPP_mode = if_DPP_mode
 
         # torch related. model, opt with device.
-        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.opt = optimizer
         self.if_by_state_dict = if_by_state_dict
         self.save_checkpoint_path = save_checkpoint_path
-        self.load_model(model, load_checkpoint_path, if_by_state_dict)
+        self.model = model
 
         # early stop
         self.best_loss = None
@@ -43,13 +42,19 @@ class Worker:
         # tensorboard
         self.writer = SummaryWriter('product/log/')
 
-    def train(self):
+    def train(self, train_dataloader, dev_dataloader):
         total_step = 0
         for e in range(self.epoch):
             print(f"This is epoch{e}#")
             step = 0
             accum_loss = 0
-            for data in tqdm(self.train_dataloader):
+            # DDP：设置sampler的epoch，
+            # DistributedSampler需要这个来指定shuffle方式，
+            # 通过维持各个进程之间的相同随机数种子使不同进程能获得同样的shuffle效果。
+            if self.if_DPP_mode:
+                train_dataloader.sampler.set_epoch(e)
+                
+            for data in tqdm(train_dataloader):
                 # zero grad
                 self.opt.zero_grad()
 
@@ -80,18 +85,24 @@ class Worker:
                     accum_loss = 0
 
             # valid
-            outputs, valid_loss = self.rollout(self.dev_dataloader)
+            outputs, valid_loss = self.rollout(dev_dataloader)
             # if best model
             if self.best_loss is None or valid_loss < self.best_loss:
                 self.best_loss = valid_loss
                 self.best_loss_epoch = e
-                self.best_model = copy.deepcopy(self.model).cpu()
+                if self.if_DPP_mode:
+                    if dist.get_rank() == 0:
+                        self.best_model = copy.deepcopy(self.model.module).cpu()
+                else:
+                    self.best_model = copy.deepcopy(self.model).cpu()
+            # early stop
             elif e - self.best_loss_epoch > 2:
                 if self.save_checkpoint_path is not None:
                     # save model
-                    if not os.path.exists(self.save_checkpoint_path):
-                        os.mkdir(self.save_checkpoint_path)
-                    self.save_model(self.best_model, os.path.join(self.save_checkpoint_path, f"{self.best_loss_epoch}.pth"))
+                    if (self.if_DPP_mode and dist.get_rank() == 0) or (not self.if_DPP_mode):
+                        if not os.path.exists(self.save_checkpoint_path):
+                            os.mkdir(self.save_checkpoint_path)
+                        self.save_model(self.best_model, os.path.join(self.save_checkpoint_path, f"{self.best_loss_epoch}.pth"))
                 break
 
     def rollout(self, dataloader):
@@ -126,21 +137,6 @@ class Worker:
             print(f"valid loss is {loss_mean}")
         return outputs, loss_mean
 
-    def load_model(self, model, load_checkpoint_path, if_by_state_dict):
-        """load_checkpoint_path have high prority.
-        """
-        # init model
-        if load_checkpoint_path is None:
-            self.model = model
-        # load model from state_dict
-        elif if_by_state_dict:
-            self.model = model
-            self.model.load_state_dict(torch.load(load_checkpoint_path, map_location=self.device))
-        # load model from pth
-        else:
-            self.model = torch.load(load_checkpoint_path)
-        self.model.to(self.device)
-
     def save_model(self, model, save_path):
         # if_by_state_dict applied to save and load means 从哪里来就到哪里去
         if self.if_by_state_dict:
@@ -151,15 +147,11 @@ class Worker:
     def update_train_kwargs(
         self,
         save_checkpoint_path = None, 
-        train_dataloader = None, 
-        dev_dataloader = None,
         opt = None,
     ):
+        """补全或更新训练时缺失的参数
+        """
         if save_checkpoint_path is not None:
             self.save_checkpoint_path = save_checkpoint_path
-        if train_dataloader is not None:
-            self.train_dataloader = train_dataloader
-        if dev_dataloader is not None:
-            self.dev_dataloader = dev_dataloader
         if opt is not None:
             self.opt = opt

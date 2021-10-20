@@ -1,4 +1,5 @@
 import os
+from random import sample
 import torch
 from torch.utils.data import DataLoader, dataloader
 import numpy as np
@@ -159,21 +160,28 @@ class BasePreProcessor:
     def get_dataloader(
         self, 
         batch_size, 
+        if_DDP_mode,
         num_workers=0, 
-        collate_fn=dict_to_list_by_max_len
+        collate_fn=dict_to_list_by_max_len,
     ):
         dataloader = {}
+        sampler = None
         for i in self.data["tensor"]:
+            dataset = MyDataSet(**self.data["tensor"][i])
             if i == "train":
                 shuffle = True
+                if if_DDP_mode:
+                    sampler = torch.utils.data.distributed.DistributedSampler(dataset)
             else:
                 shuffle = False
+
             dataloader[i] = DataLoader(
-                MyDataSet(**self.data["tensor"][i]), 
+                dataset, 
                 batch_size = batch_size, 
                 shuffle = shuffle, 
                 num_workers = num_workers,
                 collate_fn = collate_fn,
+                sampler = sampler,
             )
         return dataloader
 

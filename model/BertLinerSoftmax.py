@@ -11,7 +11,6 @@ class BertLinerSoftmax(nn.Module):
         dropout_rate=0.95,
     ):
         super().__init__()
-        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.label_num = label_num
         self.config = BertConfig.from_pretrained(model_name)
         self.bert = BertModel.from_pretrained(model_name, config=self.config)
@@ -36,4 +35,4 @@ class BertLinerSoftmax(nn.Module):
 
     def _get_loss_func(self, loss_str):
         if loss_str == "ce":
-            return nn.CrossEntropyLoss().to(self.device)
+            return nn.CrossEntropyLoss()

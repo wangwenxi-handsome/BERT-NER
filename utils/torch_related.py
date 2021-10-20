@@ -1,7 +1,45 @@
-import torch
-from torch.utils.data import Dataset
+import argparse
 import numpy as np
 import random
+import torch
+from torch.utils.data import Dataset
+import torch.distributed as dist
+from torch.nn.parallel import DistributedDataParallel as DDP
+
+
+def get_torch_model(
+    model_cls,
+    model_config = {},
+    load_checkpoint_path = None,
+):
+    """自动识别设备（默认使用全部gpu）并调整到相应模式. 
+    支持的模式有cpu模型，单机单卡模式，单机多卡模式
+    """
+    if torch.cuda.device_count <= 1:
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        if_DDP_mode = False
+    else:
+        # DDP：从外部得到local_rank参数
+        parser = argparse.ArgumentParser()
+        parser.add_argument("--local_rank", default=-1, type=int)
+        FLAGS = parser.parse_args()
+        device = FLAGS.local_rank
+        if_DDP_mode = True
+
+    # DDP：DDP backend初始化
+    torch.cuda.set_device(device)
+    dist.init_process_group(backend='nccl')  # nccl是GPU设备上最快、最推荐的后端
+
+    # load model
+    if load_checkpoint_path is not None:
+        model = torch.load(load_checkpoint_path).to_device(device)
+    else:
+        model_config["device"] = device
+        model = model_cls(**model_config).to_device(device)
+    
+    # DDP: 构造DDP model
+    model = DDP(model, device_ids=[device], output_device=device)
+    return device, model, if_DDP_mode
 
 
 def setup_seed(seed = 42):
