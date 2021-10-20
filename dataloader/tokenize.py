@@ -64,7 +64,7 @@ class NERTokenize:
         tokenizer_cls = BertTokenizerFast,
         padding = "max_length",
         truncation = True,
-        max_length = 128,
+        max_length = 256,
     ):
         self.ner_tag = ner_tag
 

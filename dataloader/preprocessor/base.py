@@ -108,13 +108,14 @@ class BasePreProcessor:
         ner_tag_method = "BIO",
         dataloader_name = ["train", "dev", "test"],
         split_rate = [],
+        max_length = 256,
     ):
         """before get dataloder, it must call init_data func to initialize the data.
         """
         # weapon prepare!!!
         self.rdataset = rdataset_cls(split_rate = split_rate, ner_tag_method = ner_tag_method)
         self.ner_tag = self.rdataset.get_ner_tag()
-        self.tokenize = NERTokenize(ner_tag = self.ner_tag, model_name = model_name)
+        self.tokenize = NERTokenize(ner_tag = self.ner_tag, model_name = model_name, max_length = max_length)
 
         # dataloader_name decides how many parts data will be divided into.
         self.dataloader_name = dataloader_name

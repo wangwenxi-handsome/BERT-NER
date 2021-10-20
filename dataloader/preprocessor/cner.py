@@ -62,6 +62,7 @@ class CNERPreProcessor(BasePreProcessor):
         train_fn = "train.char.bmes",
         dev_fn = "dev.char.bmes",
         test_fn = "test.char.bmes",
+        max_length = 256,
     ):
         super(CNERPreProcessor, self).__init__(
             rdataset_cls = CNERRDataset,
@@ -69,6 +70,7 @@ class CNERPreProcessor(BasePreProcessor):
             ner_tag_method = ner_tag_method,
             dataloader_name = ["train", "dev", "test"],
             split_rate = [],
+            max_length = max_length,
         )
         self.train_fn = train_fn
         self.dev_fn = dev_fn

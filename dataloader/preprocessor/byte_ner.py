@@ -61,6 +61,7 @@ class BYTEPreProcessor(BasePreProcessor):
         model_name,
         ner_tag_method = "BIOS",
         split_rate = [0.1, 0.1],
+        max_length = 512,
     ):
         super(BYTEPreProcessor, self).__init__(
             rdataset_cls=BYTERDataset,
@@ -68,6 +69,7 @@ class BYTEPreProcessor(BasePreProcessor):
             dataloader_name = ["train", "dev", "test"],
             split_rate = split_rate,
             ner_tag_method = ner_tag_method,
+            max_length = max_length,
         )
 
     def _read_file(self, data_path):
@@ -79,6 +81,7 @@ class BYTETESTPreProcessor(BasePreProcessor):
         self,
         model_name,
         ner_tag_method = "BIO",
+        max_length = 512,
     ):
         super(BYTETESTPreProcessor, self).__init__(
             rdataset_cls=BYTERDataset,
@@ -86,6 +89,7 @@ class BYTETESTPreProcessor(BasePreProcessor):
             dataloader_name = ["test"],
             split_rate = [],
             ner_tag_method = ner_tag_method,
+            max_length = max_length,
         )
 
     # TEST时候的data_path直接就是data的形式
@@ -109,6 +113,7 @@ class BYTETrainPreProcessor(BasePreProcessor):
         model_name,
         split_rate = [0.1],
         ner_tag_method = "BIO",
+        max_length = 512,
     ):
         super(BYTETrainPreProcessor, self).__init__(
             rdataset_cls=BYTERDataset,
@@ -116,6 +121,7 @@ class BYTETrainPreProcessor(BasePreProcessor):
             dataloader_name = ["train", "dev"],
             split_rate = split_rate,
             ner_tag_method = ner_tag_method,
+            max_length = max_length,
         )
 
     # Train时候的data_path直接就是data的形式
