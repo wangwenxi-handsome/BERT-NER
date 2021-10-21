@@ -2,6 +2,7 @@ import argparse
 import numpy as np
 import random
 import torch
+from torch.optim.lr_scheduler import LambdaLR
 from torch.utils.data import Dataset
 import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
@@ -26,19 +27,19 @@ def get_torch_model(
         device = FLAGS.local_rank
         if_DDP_mode = True
 
-    # DDP：DDP backend初始化
-    torch.cuda.set_device(device)
-    dist.init_process_group(backend='nccl')  # nccl是GPU设备上最快、最推荐的后端
+        # DDP：DDP backend初始化
+        torch.cuda.set_device(device)
+        dist.init_process_group(backend='nccl')  # nccl是GPU设备上最快、最推荐的后端
 
     # load model
     if load_checkpoint_path is not None:
-        model = torch.load(load_checkpoint_path).to_device(device)
+        model = torch.load(load_checkpoint_path).to(device)
     else:
-        model_config["device"] = device
-        model = model_cls(**model_config).to_device(device)
+        model = model_cls(**model_config).to(device)
     
-    # DDP: 构造DDP model
-    model = DDP(model, device_ids=[device], output_device=device)
+    if if_DDP_mode:
+        # DDP: 构造DDP model
+        model = DDP(model, device_ids=[device], output_device=device)
     return device, model, if_DDP_mode
 
 
@@ -79,3 +80,15 @@ class MyDataSet(Dataset):
 
     def __getitem__(self, id):
         return {i: self.kwargs[i][id] for i in self.kwargs}
+
+
+def get_linear_schedule_with_warmup(optimizer, num_warmup_steps, num_training_steps, last_epoch=-1):
+    """ Create a schedule with a learning rate that decreases linearly after
+    linearly increasing during a warmup period.
+    """
+    def lr_lambda(current_step):
+        if current_step < num_warmup_steps:
+            return float(current_step) / float(max(1, num_warmup_steps))
+        return max(0.0, float(num_training_steps - current_step) / float(max(1, num_training_steps - num_warmup_steps)))
+
+    return LambdaLR(optimizer, lr_lambda, last_epoch)

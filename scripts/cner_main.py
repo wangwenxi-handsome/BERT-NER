@@ -33,14 +33,17 @@ if __name__ == "__main__":
         load_checkpoint_path = load_checkpoint_path,
     )
     # opt
+    # !!!NOTE I can not understand
     # optimizer = optim.SGD(model.parameters(), lr = lr, momentum = momentum)
     no_decay = ["bias", "LayerNorm.weight"]
     optimizer_grouped_parameters = [
         {"params": [p for n, p in model.named_parameters() if not any(nd in n for nd in no_decay)],
-        "weight_decay": args.weight_decay,},
+        "weight_decay": 0.01,},
         {"params": [p for n, p in model.named_parameters() if any(nd in n for nd in no_decay)], "weight_decay": 0.0},
     ]
-    optimizer = optim.AdamW(optimizer_grouped_parameters, lr = lr)
+    optimizer = optim.AdamW(optimizer_grouped_parameters, lr=3e-05, eps=1e-08)
+    from utils.torch_related import get_linear_schedule_with_warmup
+    scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=48, num_training_steps=480)
 
     # data
     data_gen = CNERPreProcessor(model_name=model_name)
@@ -53,6 +56,7 @@ if __name__ == "__main__":
         if_DDP_mode = if_DDP_mode,
         model = model, 
         optimizer = optimizer, 
+        scheduler = scheduler,
         save_checkpoint_path = save_checkpoint_path,
     )
     trainer.train(dataloader["train"], dataloader["dev"])

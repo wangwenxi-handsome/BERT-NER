@@ -17,6 +17,7 @@ class Worker:
         if_DPP_mode,
         model: nn.Module,
         optimizer = None, 
+        scheduler = None,
         save_checkpoint_path: str = None,
         if_by_state_dict: bool = False,
         epoch = 50,
@@ -30,6 +31,7 @@ class Worker:
 
         # torch related. model, opt with device.
         self.opt = optimizer
+        self.scheduler = self.scheduler
         self.if_by_state_dict = if_by_state_dict
         self.save_checkpoint_path = save_checkpoint_path
         self.model = model
@@ -72,6 +74,8 @@ class Worker:
                 # step
                 loss.backward()
                 self.opt.step()
+                if self.scheduler is not None:
+                    self.scheduler.step()
 
                 # print loss every 1/5
                 step += 1
@@ -105,30 +109,31 @@ class Worker:
                         self.save_model(self.best_model, os.path.join(self.save_checkpoint_path, f"{self.best_loss_epoch}.pth"))
                 break
 
+    @torch.no_grad()
     def rollout(self, dataloader):
         outputs = []
+
         # model forward to get outputs
-        with torch.no_grad():
-            self.model.eval()
-            loss_sum = None
-            for data in dataloader:
-                # model forward
-                model_kwargs = dict(inspect.signature(self.model.forward).parameters)
-                model_input = {}
-                for i in model_kwargs:
-                    tmp_input = data.get(i, None)
-                    if tmp_input is not None:
-                        model_input[i] = tmp_input.to(self.device)
-                    else:
-                        model_input[i] = None
-                output, loss = self.model(**model_input)
-                outputs.append(output.cpu())
-                if loss is not None:
-                    if loss_sum is None:
-                        loss_sum = loss
-                    else:
-                        loss_sum += loss
-            self.model.train()
+        self.model.eval()
+        loss_sum = None
+        for data in dataloader:
+            # model forward
+            model_kwargs = dict(inspect.signature(self.model.forward).parameters)
+            model_input = {}
+            for i in model_kwargs:
+                tmp_input = data.get(i, None)
+                if tmp_input is not None:
+                    model_input[i] = tmp_input.to(self.device)
+                else:
+                    model_input[i] = None
+            output, loss = self.model(**model_input)
+            outputs.append(output.cpu())
+            if loss is not None:
+                if loss_sum is None:
+                    loss_sum = loss
+                else:
+                    loss_sum += loss
+        self.model.train()
         
         # return outputs and loss(None is no labels)
         loss_mean = None
