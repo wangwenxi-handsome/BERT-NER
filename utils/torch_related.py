@@ -16,7 +16,7 @@ def get_torch_model(
     """自动识别设备（默认使用全部gpu）并调整到相应模式. 
     支持的模式有cpu模型，单机单卡模式，单机多卡模式
     """
-    if torch.cuda.device_count <= 1:
+    if torch.cuda.device_count() <= 1:
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         if_DDP_mode = False
     else:
