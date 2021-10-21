@@ -11,8 +11,9 @@ from metric.ner_metric import NERMetric
 
 
 # global args
+epoch = 5
 model_name = "bert-base-chinese"
-folder_name = "product/data/cner/data.pth"
+folder_name = "/opt/tiger/data.pth"
 label_num = 25
 lr = 0.001
 momentum = 0.9
@@ -58,6 +59,7 @@ if __name__ == "__main__":
         optimizer = optimizer, 
         scheduler = scheduler,
         save_checkpoint_path = save_checkpoint_path,
+        epoch = epoch,
     )
     trainer.train(dataloader["train"], dataloader["dev"])
 

@@ -134,11 +134,9 @@ class BasePreProcessor:
         """
         if isinstance(data_path, str):
             data_path = [data_path]
-        print("www", data_path)
         # 只传入了一个数据集
         if len(data_path) == 1 and data_path[0][-4: ] == ".pth":
             # 是以已经处理过的数据
-            print("hhh", data_path)
             data = torch.load(data_path[0])
         # 未处理过
         else:
