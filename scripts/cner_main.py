@@ -1,6 +1,7 @@
 import os
 import sys
 sys.path.append(os.getcwd())
+import torch
 import torch.optim as optim
 
 from dataloader.preprocessor.cner import CNERPreProcessor
@@ -19,7 +20,7 @@ label_num = 25
 lr = 3e-05
 save_checkpoint_path = "product/data/cner/checkpoint"
 load_checkpoint_path = None
-batch_size = 24
+batch_size_per_gpu = 24
 num_workers = 0
 
 
@@ -42,12 +43,13 @@ if __name__ == "__main__":
         {"params": [p for n, p in model.named_parameters() if any(nd in n for nd in no_decay)], "weight_decay": 0.0},
     ]
     optimizer = optim.AdamW(optimizer_grouped_parameters, lr = lr, eps = 1e-08)
-    scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=48, num_training_steps=480)
+    scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps = 48, num_training_steps = 480)
 
     # data
     data_gen = CNERPreProcessor(model_name=model_name)
     data_gen.init_data(folder_name=folder_name)
-    dataloader = data_gen.get_dataloader(batch_size=batch_size, num_workers=num_workers)
+    n_gpus = torch.cuda.device_count() if device != "cpu" else 1
+    dataloader = data_gen.get_dataloader(batch_size=batch_size_per_gpu * n_gpus, num_workers=num_workers)
 
     # worker
     trainer = Worker(

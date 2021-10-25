@@ -53,9 +53,9 @@ def get_torch_model(
     else:
         model = model_cls(**model_config).to(device)
 
-    if torch.cude.device_count() > 1:
+    if torch.cuda.device_count() > 1:
         model = nn.DataParallel(model)
-        
+
     return device, model
 
 
