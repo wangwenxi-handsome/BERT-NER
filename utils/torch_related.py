@@ -2,6 +2,7 @@ import argparse
 import numpy as np
 import random
 import torch
+import torch.nn as nn
 from torch.optim.lr_scheduler import LambdaLR
 from torch.utils.data import Dataset
 import torch.distributed as dist
@@ -15,6 +16,8 @@ def get_torch_model(
 ):
     """自动识别设备（默认使用全部gpu）并调整到相应模式. 
     支持的模式有cpu模型，单机单卡模式，单机多卡模式
+    !!!TODO support DDP mode
+    """
     """
     if torch.cuda.device_count <= 1:
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -40,7 +43,20 @@ def get_torch_model(
     if if_DDP_mode:
         # DDP: 构造DDP model
         model = DDP(model, device_ids=[device], output_device=device)
-    return device, model, if_DDP_mode
+    return device, model
+    """
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+    # load model
+    if load_checkpoint_path is not None:
+        model = torch.load(load_checkpoint_path).to(device)
+    else:
+        model = model_cls(**model_config).to(device)
+
+    if torch.cude.device_count() > 1:
+        model = nn.DataParallel(model)
+        
+    return device, model
 
 
 def setup_seed(seed = 42):

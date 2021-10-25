@@ -14,7 +14,6 @@ class Worker:
     def __init__(
         self, 
         device,
-        if_DPP_mode,
         model: nn.Module,
         optimizer = None, 
         scheduler = None,
@@ -27,7 +26,6 @@ class Worker:
 
         # device
         self.device = device
-        self.if_DPP_mode = if_DPP_mode
 
         # torch related. model, opt with device.
         self.opt = optimizer
@@ -53,7 +51,7 @@ class Worker:
             # DDP：设置sampler的epoch，
             # DistributedSampler需要这个来指定shuffle方式，
             # 通过维持各个进程之间的相同随机数种子使不同进程能获得同样的shuffle效果。
-            if self.if_DPP_mode:
+            if dist.get_rank() != -1:
                 train_dataloader.sampler.set_epoch(e)
                 
             for data in tqdm(train_dataloader):
@@ -94,16 +92,16 @@ class Worker:
             if self.best_loss is None or valid_loss < self.best_loss:
                 self.best_loss = valid_loss
                 self.best_loss_epoch = e
-                if self.if_DPP_mode:
-                    if dist.get_rank() == 0:
+                if dist.get_rank() in [0, -1]:
+                    if hasattr(self.model, "module"):
                         self.best_model = copy.deepcopy(self.model.module).cpu()
-                else:
-                    self.best_model = copy.deepcopy(self.model).cpu()
+                    else:
+                        self.best_model = copy.deepcopy(self.model).cpu()
             # early stop
             elif e - self.best_loss_epoch > 2:
                 if self.save_checkpoint_path is not None:
                     # save model
-                    if (self.if_DPP_mode and dist.get_rank() == 0) or (not self.if_DPP_mode):
+                    if dist.get_rank() in [0, -1]:
                         if not os.path.exists(self.save_checkpoint_path):
                             os.mkdir(self.save_checkpoint_path)
                         self.save_model(self.best_model, os.path.join(self.save_checkpoint_path, f"{self.best_loss_epoch}.pth"))

@@ -62,19 +62,20 @@ class NERTokenize:
         model_name,
         cased = True,
         tokenizer_cls = BertTokenizerFast,
-        padding = "max_length",
-        truncation = True,
-        max_length = 256,
     ):
         self.ner_tag = ner_tag
 
         # tokenizer related
         self.tokenizer = tokenizer_cls.from_pretrained(model_name, do_lower_case = cased)
-        self.padding = padding
-        self.truncation = truncation
-        self.max_length = max_length
 
-    def get_data_with_tensor_format(self, data):
+    def get_data_with_tensor_format(
+        self, 
+        data,  
+        max_length = None, 
+        padding = "max_length", 
+        truncation = True,
+        return_tensors = "pt",
+    ):
         """get data with tensor format
         in: {"x": , "y": , "id": }
         out: {"input_ids":, "token_type_ids":, "attention_mask":, "offset_mapping":, "labels":, "length":}
@@ -83,10 +84,10 @@ class NERTokenize:
             data["x"],
             is_split_into_words = True, 
             return_offsets_mapping= True,
-            padding = self.padding,
-            truncation = self.truncation,
-            max_length = self.max_length,
-            return_tensors = "pt",
+            padding = padding,
+            truncation = truncation,
+            max_length = max_length,
+            return_tensors = return_tensors,
         )
         data_len = self._get_tokenize_length(data["x"], data_x["offset_mapping"])
         new_data = {
