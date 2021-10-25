@@ -29,7 +29,7 @@ class Worker:
 
         # torch related. model, opt with device.
         self.opt = optimizer
-        self.scheduler = self.scheduler
+        self.scheduler = scheduler
         self.if_by_state_dict = if_by_state_dict
         self.save_checkpoint_path = save_checkpoint_path
         self.model = model
