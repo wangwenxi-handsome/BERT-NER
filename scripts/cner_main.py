@@ -14,8 +14,8 @@ from utils.torch_related import get_linear_schedule_with_warmup
 
 # global args
 epoch = 3
-model_name = "bert-base-chinese"
-folder_name = "product/data/cner"
+model_name = "/opt/tiger/bert-base-chinese"
+folder_name = "product/data/cner/data.pth"
 label_num = 25
 lr = 3e-05
 save_checkpoint_path = "product/data/cner/checkpoint"

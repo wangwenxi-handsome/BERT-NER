@@ -59,7 +59,11 @@ class Worker:
                 self.opt.zero_grad()
 
                 # model forward
-                model_kwargs = dict(inspect.signature(self.model.forward).parameters)
+                if hasattr(self.model, "module"):
+                    func = self.model.module.forward
+                else:
+                    func = self.model.forward
+                model_kwargs = dict(inspect.signature(func).parameters)
                 model_input = {}
                 for i in model_kwargs:
                     tmp_input = data.get(i, None)
@@ -68,6 +72,8 @@ class Worker:
                     else:
                         model_input[i] = None
                 output, loss = self.model(**model_input)
+                if len(loss) > 1:
+                    loss = loss.mean()
 
                 # step
                 loss.backward()
@@ -116,7 +122,11 @@ class Worker:
         loss_sum = None
         for data in dataloader:
             # model forward
-            model_kwargs = dict(inspect.signature(self.model.forward).parameters)
+            if hasattr(self.model, "module"):
+                func = self.model.module.forward
+            else:
+                func = self.model.forward
+            model_kwargs = dict(inspect.signature(func).parameters)
             model_input = {}
             for i in model_kwargs:
                 tmp_input = data.get(i, None)
@@ -125,6 +135,8 @@ class Worker:
                 else:
                     model_input[i] = None
             output, loss = self.model(**model_input)
+            if len(loss) > 1:
+                loss = loss.mean()
             outputs.append(output.cpu())
             if loss is not None:
                 if loss_sum is None:

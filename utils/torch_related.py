@@ -45,7 +45,7 @@ def get_torch_model(
         model = DDP(model, device_ids=[device], output_device=device)
     return device, model
     """
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # load model
     if load_checkpoint_path is not None:
