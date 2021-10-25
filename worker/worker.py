@@ -51,7 +51,7 @@ class Worker:
             # DDP：设置sampler的epoch，
             # DistributedSampler需要这个来指定shuffle方式，
             # 通过维持各个进程之间的相同随机数种子使不同进程能获得同样的shuffle效果。
-            if dist.get_rank() != -1:
+            if dist.is_initialized():
                 train_dataloader.sampler.set_epoch(e)
                 
             for data in tqdm(train_dataloader):
@@ -80,8 +80,8 @@ class Worker:
                 accum_loss += loss
                 total_step += 1
                 self.writer.add_scalar("loss", loss, total_step)
-                if step % int(len(self.train_dataloader) / 5) == 0:
-                    temp_loss = accum_loss / int(len(self.train_dataloader) / 5)
+                if step % int(len(train_dataloader) / 5) == 0:
+                    temp_loss = accum_loss / int(len(train_dataloader) / 5)
                     print(f"train loss is {temp_loss}")
                     step = 0
                     accum_loss = 0
@@ -92,7 +92,7 @@ class Worker:
             if self.best_loss is None or valid_loss < self.best_loss:
                 self.best_loss = valid_loss
                 self.best_loss_epoch = e
-                if dist.get_rank() in [0, -1]:
+                if (not dist.is_initialized()) or (dist.is_initialized() and dist.get_rank() == 0):
                     if hasattr(self.model, "module"):
                         self.best_model = copy.deepcopy(self.model.module).cpu()
                     else:
@@ -101,7 +101,7 @@ class Worker:
             elif e - self.best_loss_epoch > 2:
                 if self.save_checkpoint_path is not None:
                     # save model
-                    if dist.get_rank() in [0, -1]:
+                    if (not dist.is_initialized()) or (dist.is_initialized() and dist.get_rank() == 0):
                         if not os.path.exists(self.save_checkpoint_path):
                             os.mkdir(self.save_checkpoint_path)
                         self.save_model(self.best_model, os.path.join(self.save_checkpoint_path, f"{self.best_loss_epoch}.pth"))

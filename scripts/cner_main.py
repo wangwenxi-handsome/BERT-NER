@@ -15,7 +15,7 @@ from utils.torch_related import get_linear_schedule_with_warmup
 # global args
 epoch = 3
 model_name = "bert-base-chinese"
-folder_name = "/opt/tiger/data.pth"
+folder_name = "product/data/cner"
 label_num = 25
 lr = 3e-05
 save_checkpoint_path = "product/data/cner/checkpoint"
@@ -48,7 +48,7 @@ if __name__ == "__main__":
     # data
     data_gen = CNERPreProcessor(model_name=model_name)
     data_gen.init_data(folder_name=folder_name)
-    n_gpus = torch.cuda.device_count() if device != "cpu" else 1
+    n_gpus = max(torch.cuda.device_count(), 1)
     dataloader = data_gen.get_dataloader(batch_size=batch_size_per_gpu * n_gpus, num_workers=num_workers)
 
     # worker
@@ -59,7 +59,6 @@ if __name__ == "__main__":
         optimizer = optimizer, 
         scheduler = scheduler,
         save_checkpoint_path = save_checkpoint_path,
-        epoch = epoch,
     )
     trainer.train(dataloader["train"], dataloader["dev"])
 

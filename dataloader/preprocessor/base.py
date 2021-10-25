@@ -128,6 +128,7 @@ class BasePreProcessor:
         else:
             # 保证训练集，验证集和测试集都有最大长度参数
             assert len(max_length) == len(dataloader_name)
+            self.max_length = max_length
 
     def _read_file(self, data_path: str):
         """from data_path to a list of data.
@@ -160,7 +161,10 @@ class BasePreProcessor:
             # to tensor
             data_tensor = {}
             for i in data_list:
-                data_tensor[i] = self.tokenize.get_data_with_tensor_format(data_list[i], max_length = self.max_length[i])
+                data_tensor[i] = self.tokenize.get_data_with_tensor_format(
+                    data_list[i], 
+                    max_length = self.max_length[self.dataloader_name2id[i]],
+                )
             data = {"list": data_list, "tensor": data_tensor}
             # save, 取第一个文件的文件名作为名字，但后缀名为.pth
             torch.save(data, os.path.join(os.path.dirname(data_path[0]), "data.pth"))
@@ -178,7 +182,7 @@ class BasePreProcessor:
             dataset = MyDataSet(**self.data["tensor"][i])
             if i == "train":
                 shuffle = True
-                if dist.get_rank() != -1:
+                if dist.is_initialized():
                     sampler = torch.utils.data.distributed.DistributedSampler(dataset)
             else:
                 shuffle = False
