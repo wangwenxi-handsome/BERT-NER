@@ -77,6 +77,9 @@ class Worker:
 
                 # step
                 loss.backward()
+                
+                torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
+                
                 self.opt.step()
                 if self.scheduler is not None:
                     self.scheduler.step()
@@ -107,11 +110,15 @@ class Worker:
             elif e - self.best_loss_epoch > 2:
                 if self.save_checkpoint_path is not None:
                     # save model
-                    if (not dist.is_initialized()) or (dist.is_initialized() and dist.get_rank() == 0):
-                        if not os.path.exists(self.save_checkpoint_path):
-                            os.mkdir(self.save_checkpoint_path)
-                        self.save_model(self.best_model, os.path.join(self.save_checkpoint_path, f"{self.best_loss_epoch}.pth"))
+                    self.save_model(self.best_model, os.path.join(self.save_checkpoint_path, f"{self.best_loss_epoch}.pth"))
                 break
+            elif e == self.epoch - 1:
+                if hasattr(self.model, "module"):
+                    if hasattr(self.model, "module"):
+                        last_model = copy.deepcopy(self.model.module).cpu()
+                    else:
+                        last_model = copy.deepcopy(self.model).cpu()
+                self.save_model(last_model, os.path.join(self.save_checkpoint_path, f"{e}.pth"))
 
     @torch.no_grad()
     def rollout(self, dataloader):
@@ -153,11 +160,13 @@ class Worker:
         return outputs, loss_mean
 
     def save_model(self, model, save_path):
-        # if_by_state_dict applied to save and load means 从哪里来就到哪里去
-        if self.if_by_state_dict:
-            torch.save(model.state_dict(), save_path)
-        else:
-            torch.save(model, save_path)
+        if (not dist.is_initialized()) or (dist.is_initialized() and dist.get_rank() == 0):
+            if not os.path.exists(os.path.dirname(save_path)):
+                os.mkdir(os.path.dirname(save_path))
+            if self.if_by_state_dict:
+                torch.save(model.state_dict(), save_path)
+            else:
+                torch.save(model, save_path)
 
     def update_train_kwargs(
         self,

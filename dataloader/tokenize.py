@@ -164,7 +164,7 @@ class NERTokenize:
             entity_labels = self._change_tag2entity(labels)
         else:
             entity_labels = None
-        return entity_outputs, entity_labels 
+        return entity_outputs, entity_labels, offset_outputs
 
     def _offset(self, outputs, offset_mapping):
         new_outputs = []

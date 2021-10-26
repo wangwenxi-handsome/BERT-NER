@@ -8,7 +8,7 @@ class BertLinerSoftmax(nn.Module):
         model_name = "bert-base-cased",
         loss_func = "ce",
         label_num=15,
-        dropout_rate=0.95,
+        dropout_rate=0.1,
     ):
         super().__init__()
         self.label_num = label_num

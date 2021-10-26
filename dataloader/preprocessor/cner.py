@@ -51,7 +51,7 @@ class CNERRDataset(RDataset):
     
     @property
     def classes(self):
-        return ['EDU', 'TITLE', 'PRO', 'ORG', 'LOC', 'NAME', 'CONT', 'RACE']
+        return ['CONT', 'EDU', 'LOC', 'NAME', 'ORG', 'PRO', 'RACE', 'TITLE']
 
 
 class CNERPreProcessor(BasePreProcessor):
@@ -62,7 +62,7 @@ class CNERPreProcessor(BasePreProcessor):
         train_fn = "train.char.bmes",
         dev_fn = "dev.char.bmes",
         test_fn = "test.char.bmes",
-        max_length = [128, 128, 512],
+        max_length = [128, 512, 512],
     ):
         super(CNERPreProcessor, self).__init__(
             rdataset_cls = CNERRDataset,
