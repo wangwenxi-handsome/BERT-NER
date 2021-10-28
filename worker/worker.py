@@ -43,8 +43,8 @@ class Worker:
 
         # save model and tensorboard writer
         if folder_path is not None:
-            self.log_path = os.path.join(folder_path, "/log/")
-            self.save_model_path = os.path.join(folder_path, "/model/")
+            self.log_path = os.path.join(folder_path, "log/")
+            self.save_model_path = os.path.join(folder_path, "model/")
             if not os.path.exists(self.log_path):
                     os.mkdir(self.log_path)
             if not os.path.exists(self.save_model_path):

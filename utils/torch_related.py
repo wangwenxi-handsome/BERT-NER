@@ -53,6 +53,7 @@ def get_torch_model(
         if if_by_state_dict:
             model = model_cls(**model_config)
             model.load_state_dict(torch.load(load_checkpoint_path))
+            model = model.to(device)
         else:
             model = torch.load(load_checkpoint_path).to(device)
     else:

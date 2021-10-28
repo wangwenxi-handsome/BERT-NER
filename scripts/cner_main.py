@@ -16,7 +16,7 @@ from utils.logger import init_logger
 # 实验中用到的参数，用于实验
 global_config = {
     # path
-    "data_folder_name ": "product/data/cner",
+    "data_folder_name": "product/data/cner/data.pth",
     "folder_path": "product/experiments/cner1/",
     # model
     "model_name": "bert-base-chinese",
@@ -64,8 +64,9 @@ def train(logger, config, data_gen, train_dataloader, dev_dataloader = None):
 def rollout(logger, config, data_gen, dataloader, name, checkpoint = None):
     metrics = []
     if checkpoint is None:
-        all_checkpoints = os.listdir(os.path.join(config["folder_name"], "/model/"))
-        all_checkpoints = [os.path.join(config["folder_name"], i) for i in all_checkpoints]
+        all_checkpoints = os.listdir(os.path.join(config["folder_path"], "model/"))
+        all_checkpoints.sort(key = lambda x: int(x.split(".")[0]))
+        all_checkpoints = [os.path.join(config["folder_path"], "model/", i) for i in all_checkpoints]
     elif isinstance(checkpoint, str):
         all_checkpoints = [checkpoint]
     elif isinstance(checkpoint, list):
@@ -105,19 +106,27 @@ def rollout(logger, config, data_gen, dataloader, name, checkpoint = None):
     f1 = []
     for m in metrics:
         mean_score = m.get_mean_score()
-        acc.append(mean_score["macro"]["acc"])
-        recall.append(mean_score["macro"]["recall"])
-        f1.append(mean_score["macro"]["f1"])
+        acc.append(mean_score["micro"]["acc"])
+        recall.append(mean_score["micro"]["recall"])
+        f1.append(mean_score["micro"]["f1"])
     
+    """
     l1 = plt.plot(acc,'r--', label='acc')
     l2 = plt.plot(recall,'g--', label='recall')
     l3 = plt.plot(f1, 'b--', label='f1')
     plt.plot(acc, 'ro-', recall, 'g+-', f1, 'b^-')
     plt.show()
+    """
+    logger.info("show all metrics(micro)")
+    logger.info("acc %s", acc)
+    logger.info("recall %s", recall)
+    logger.info("f1 %s", f1)
 
 
 def main(config):
     setup_seed(42)
+    if not os.path.exists(config["folder_path"]):
+        os.makedirs(config["folder_path"])
     logger = init_logger(log_path = os.path.join(config["folder_path"], "output.log"))
     logger.info("global config %s", config)
 
@@ -127,11 +136,11 @@ def main(config):
     data_gen = CNERPreProcessor(model_name = config["model_name"])
     data_gen.init_data(folder_name = config["data_folder_name"])
     dataloader = data_gen.get_dataloader(batch_size = config["batch_size_per_gpu"] * n_gpus)
-    logger.info("get dataloader")
+    logger.info("dataloader down")
 
     # train
     logger.info("train start")
-    train(logger, config, data_gen, dataloader["train"], dataloader["dev"])
+    # train(logger, config, data_gen, dataloader["train"], dataloader["dev"])
     logger.info("train end")
 
     # test
