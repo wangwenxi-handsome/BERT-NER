@@ -101,13 +101,13 @@ class Worker:
                     self.scheduler.step()
 
                 # save
-                if global_step % save_step == 0:
+                if (global_step + 1) % save_step == 0:
                     self.save_model(os.path.join(self.save_model_path, f"{global_step}.pth"))
 
                 # bar progress and tensorboard writer
                 pbar(step, {'loss': loss.item()})
-                global_step += 1
                 self.writer.add_scalar("loss", loss, global_step)
+                global_step += 1
 
             # dev
             if dev_dataloader is not None:
