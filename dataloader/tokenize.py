@@ -3,6 +3,8 @@ from transformers import BertTokenizerFast
 
 
 class NERTAG:
+    """map entity label to id
+    """
     def __init__(
         self,
         ner_class,
@@ -37,6 +39,9 @@ class NERTAG:
         return self.id2tag[id]
 
     def map_B2I(self, id):
+        """map B start tag id to I start tag id.
+        for example: id(B-LOC) -> id(I-LOC)
+        """
         if id == 0:
             return 0
         tag = self.id2tag[id]
@@ -56,6 +61,9 @@ class NERTAG:
 
 
 class NERTokenize:
+    """Bert Tokenize for NER.
+    split sentence, transfer sentence to bert input, decode model output to entity.
+    """
     def __init__(
         self,
         ner_tag,
@@ -64,8 +72,6 @@ class NERTokenize:
         tokenizer_cls = BertTokenizerFast,
     ):
         self.ner_tag = ner_tag
-
-        # tokenizer related
         self.tokenizer = tokenizer_cls.from_pretrained(model_name, do_lower_case = cased)
 
     def get_data_with_tensor_format(
@@ -99,11 +105,14 @@ class NERTokenize:
         }
         # if there is y
         if "y" in data:
-            data_y = self._get_modified_tag(data_x, data["y"])
+            data_y = self._get_modified_labels(data_x, data["y"])
             new_data["labels"] = torch.tensor(data_y, dtype=torch.long)
         return new_data
 
-    def _get_modified_tag(self, data_x, data_y):
+    def _get_modified_labels(self, data_x, data_y):
+        """英文分词时会导致一个单词被分为多个小单词，这会改变labels
+        该函数作用是调整labels使其匹配分词后的句子
+        """
         new_data_y = []
         for i in range(len(data_y)):
             # 起止标志
@@ -131,6 +140,8 @@ class NERTokenize:
         return new_data_y
 
     def _get_tokenize_length(self, data, offset):
+        """获取模型输入的实际长度(除去padding)
+        """
         data_len = []
         for i in range(len(data)):
             # 首尾标记
@@ -142,8 +153,10 @@ class NERTokenize:
             data_len.append(length)
         return data_len
 
-    # 将输出的tensor和labels转换成[[(class, start, end), ()...], [句子2], [句子3]...]的形式
     def decode(self, outputs, tokenize_length, labels = None, offset_mapping = None):
+        """将模型输出的tensor和labels转换成[[(class, start, end), ()...], [句子2], [句子3]...]的形式
+        返回模型输出的实体，labels中的实体，以及句子中每个分词单位对应的模型输出(tag_id)
+        """
         # process outputs
         # argmax
         outputs = [torch.argmax(i, dim = -1).numpy().tolist() for i in outputs]
@@ -155,7 +168,7 @@ class NERTokenize:
         for i in range(len(new_outputs)):
             new_outputs[i] = new_outputs[i][: tokenize_length[i]]
         # offset
-        offset_outputs = self._offset(new_outputs, offset_mapping)
+        offset_outputs = self._offset_for_raw_sentence(new_outputs, offset_mapping)
         # tag to entity
         entity_outputs = self._change_tag2entity(offset_outputs)
 
@@ -166,7 +179,11 @@ class NERTokenize:
             entity_labels = None
         return entity_outputs, entity_labels, offset_outputs
 
-    def _offset(self, outputs, offset_mapping):
+    def _offset_for_raw_sentence(self, outputs, offset_mapping):
+        """获取原句子中每个单词对应的模型输出，需要处理的情况有
+        1. 去掉首尾标记符号
+        2. 处理一个单词被分成很多子单词的情况
+        """
         new_outputs = []
         if offset_mapping is None:
             for i in outputs:
@@ -191,12 +208,17 @@ class NERTokenize:
         return new_outputs
 
     def _agg_all_label_for_one_word(self, label_list):
+        """针对多个tag对应同一个单词的情况，该函数决定了这些tag如何聚合得到这个单词的tag
+        """
         for i in label_list:
             if i != 0:
                 return i
         return 0
 
     def _change_tag2entity(self, data_y):
+        """将原句子中每个单词对应的模型输出转换为实体
+        [[(class, start, end), (class, start, end)...], []...]
+        """
         all_entity = []
         for sentence in data_y:
             sentence_entity = []

@@ -13,6 +13,7 @@ def get_torch_model(
     model_cls,
     model_config = {},
     load_checkpoint_path = None,
+    if_by_state_dict = True,
 ):
     """自动识别设备（默认使用全部gpu）并调整到相应模式. 
     支持的模式有cpu模型，单机单卡模式，单机多卡模式
@@ -49,7 +50,11 @@ def get_torch_model(
 
     # load model
     if load_checkpoint_path is not None:
-        model = torch.load(load_checkpoint_path).to(device)
+        if if_by_state_dict:
+            model = model_cls(**model_config)
+            model.load_state_dict(torch.load(load_checkpoint_path))
+        else:
+            model = torch.load(load_checkpoint_path).to(device)
     else:
         model = model_cls(**model_config).to(device)
 

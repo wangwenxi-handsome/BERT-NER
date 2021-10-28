@@ -1,8 +1,9 @@
-import torch
 from collections import Counter
 
 
 class NERMetric:
+    """get entity score
+    """
     def __init__(self, sequence, entity_labels, entity_outputs):
         self.sequence = sequence
         self.entity_labels = entity_labels
@@ -54,7 +55,9 @@ class NERMetric:
         return class_info
 
     def get_score(self):
-        return self.class_info
+        tmp_class_info = self.class_info.copy()
+        del tmp_class_info["all"]
+        return tmp_class_info
 
     def get_mean_score(self):
         score_dict = {"micro": self.class_info["all"]}
