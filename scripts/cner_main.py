@@ -1,6 +1,5 @@
 import os
 import sys
-from torch.utils import data
 sys.path.append(os.getcwd())
 import torch
 import torch.optim as optim
@@ -103,7 +102,7 @@ def main(config):
     train(config, data_gen, dataloader["train"], dataloader["dev"])
 
     # test
-    rollout(config, data_gen, dataloader["test"], "test", config)
+    rollout(config, data_gen, dataloader["test"], "test")
 
 
 if __name__ == "__main__":
