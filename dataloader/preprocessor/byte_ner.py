@@ -7,8 +7,8 @@ from dataloader.preprocessor.base import RDataset, BasePreProcessor
 class BYTERDataset(RDataset):
     def __init__(
         self, 
+        ner_tag_method = "BIO",
         split_rate = [0.8, 0.1, 0.1],
-        ner_tag_method = "BIOS",
     ):
         super(BYTERDataset, self).__init__(split_rate = split_rate, ner_tag_method = ner_tag_method)
         self.ner_tag = NERTAG(self.classes, ner_tag_method)
@@ -51,7 +51,7 @@ class BYTERDataset(RDataset):
             '产品-交通工具', '产品-文娱产品', '产品-服饰', '产品-设备工具', '产品-金融产品', '产品-食品', '地点-other', 
             '地点-公共场所', '地点-楼宇建筑物', '技术术语-技术指标', '技术术语-技术标准', '技术术语-技术概念', '组织-other', 
             '组织-企业机构', '组织-科研院校', '组织-行政机构', '组织-部门团体', '职业岗位', '规定-other', '规定-法律法规', 
-            '规定-规章制度', '软件系统-other', '软件系统-应用软件', '软件系统-系统平台', '软件系统-网站'
+            '规定-规章制度', '软件系统-other', '软件系统-应用软件', '软件系统-系统平台', '软件系统-网站',
         ]
 
 
@@ -59,9 +59,9 @@ class BYTEPreProcessor(BasePreProcessor):
     def __init__(
         self,
         model_name,
-        ner_tag_method = "BIOS",
+        ner_tag_method = "BIO",
         split_rate = [0.1, 0.1],
-        max_length = 512,
+        max_length = [512, 512, 512],
     ):
         super(BYTEPreProcessor, self).__init__(
             rdataset_cls=BYTERDataset,
@@ -76,15 +76,15 @@ class BYTEPreProcessor(BasePreProcessor):
         return np.load(data_path, allow_pickle=True).tolist()
 
 
-class BYTETESTPreProcessor(BasePreProcessor):
+class BYTEServingPreProcessor(BasePreProcessor):
     def __init__(
         self,
         model_name,
         ner_tag_method = "BIO",
         max_length = 512,
     ):
-        super(BYTETESTPreProcessor, self).__init__(
-            rdataset_cls=BYTERDataset,
+        super(BYTEServingPreProcessor, self).__init__(
+            rdataset_cls = BYTERDataset,
             model_name = model_name,
             dataloader_name = ["test"],
             split_rate = [],
@@ -93,38 +93,6 @@ class BYTETESTPreProcessor(BasePreProcessor):
         )
 
     # TEST时候的data_path直接就是data的形式
-    def init_data(self, data_path):
-        data_list = []
-        data_list.extend(self.rdataset.get_data_with_list_format(data_path))
-        # 将分好的数据对应到dataloader_name上 
-        assert len(data_list) == len(self.dataloader_name)
-        data_list = {self.dataloader_name[i]: data_list[i] for i in range(len(data_list))}
-        # to tensor
-        data_tensor = {}
-        for i in data_list:
-            data_tensor[i] = self.tokenize.get_data_with_tensor_format(data_list[i])
-        data = {"list": data_list, "tensor": data_tensor}
-        return data
-
-
-class BYTETrainPreProcessor(BasePreProcessor):
-    def __init__(
-        self,
-        model_name,
-        split_rate = [0.1],
-        ner_tag_method = "BIO",
-        max_length = 512,
-    ):
-        super(BYTETrainPreProcessor, self).__init__(
-            rdataset_cls=BYTERDataset,
-            model_name = model_name,
-            dataloader_name = ["train", "dev"],
-            split_rate = split_rate,
-            ner_tag_method = ner_tag_method,
-            max_length = max_length,
-        )
-
-    # Train时候的data_path直接就是data的形式
     def init_data(self, data_path):
         data_list = []
         data_list.extend(self.rdataset.get_data_with_list_format(data_path))

@@ -137,9 +137,12 @@ class BasePreProcessor:
     
     def init_data(self, data_path: Union[str, List[str]]):
         """init the data
-        data_path -> [{data1}, {data2}, {data3}...] 
-        self.data["list"] -> [{"x": , "y": , "id": }, ...]
-        self.data["tensor"] -> [{"input_ids": [], "labels": []...}, {}...]
+        1. by _read_file:
+            data_path -> [{data1}, {data2}, {data3}...]
+        2. by RDataset get_data_with_list_format( = self._split_data(self._preprocess_data(data))):
+            self.data["list"] -> [{"x": , "y": , "id": }, ...] 
+        3. by NERTokenize get_data_with_tensor_format:
+            self.data["tensor"] -> [{"input_ids": [], "labels": []...}, {}...]
         """
         if isinstance(data_path, str):
             data_path = [data_path]
