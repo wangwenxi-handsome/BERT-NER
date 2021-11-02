@@ -13,7 +13,7 @@ from utils.torch_related import get_linear_schedule_with_warmup
 from utils.logger import init_logger
 
 
-# 实验中用到的参数，用于实验
+# 实验中用到的参数
 global_config = {
     # path
     "data_folder_name": "product/data/cner/data.pth",
