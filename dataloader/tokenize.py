@@ -106,6 +106,7 @@ class NERTokenize:
         # if there is y
         if "y" in data:
             data_y = self._get_modified_labels(data_x, data["y"])
+            print(data_y)
             new_data["labels"] = torch.tensor(data_y, dtype=torch.long)
         return new_data
 

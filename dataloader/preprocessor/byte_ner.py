@@ -33,7 +33,7 @@ class BYTERDataset(RDataset):
                                 now_label[j] = "B-" + ner_class
                             else:
                                 now_label[j] = "I-" + ner_class
-                # now_label = [self.ner_tag.tag2id[w] for w in now_label]
+                now_label = [self.ner_tag.tag2id[w] for w in now_label]
                 new_data["y"].append(now_label)
             except:
                 if "y" in new_data:
