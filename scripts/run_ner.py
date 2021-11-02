@@ -1,4 +1,5 @@
 import os
+import shutil
 import torch
 import torch.optim as optim
 from model.BertLinerSoftmax import BertLinerSoftmax
@@ -20,9 +21,13 @@ defalut_config = {
     "label_num": 25,    # NER标签的数目
     # train
     "epoch": 3,     # epoch数
-    "lr": 3e-05,    # 学习率
+    "lr": 2e-05,    # 学习率
     "batch_size_per_gpu": 24,   # 每张显卡上的batch_size
     "save_step_rate": 0.1,  # 每训练多少百分比保存一个checkpoint
+    # main
+    "if_train": True,
+    "if_select": True,
+    "if_test": True,
 }
 
 
@@ -59,22 +64,23 @@ def train(logger, config, data_gen, train_dataloader, dev_dataloader = None):
     del trainer
 
 
-def rollout(logger, config, data_gen, dataloader, name, checkpoint = None):
+def select(logger, config, data_gen, dataloader, name):
     metrics = []
-    if checkpoint is None:
-        all_checkpoints = os.listdir(os.path.join(config["folder_path"], "model/"))
-        all_checkpoints.sort(key = lambda x: int(x.split(".")[0]))
-        all_checkpoints = [os.path.join(config["folder_path"], "model/", i) for i in all_checkpoints]
-    elif isinstance(checkpoint, str):
-        all_checkpoints = [checkpoint]
-    elif isinstance(checkpoint, list):
-        all_checkpoints = checkpoint
-    else:
-        raise ValueError(f"{type(checkpoint)} is not supported")
+    
+    all_checkpoints = os.listdir(os.path.join(config["folder_path"], "model/"))
+    if ".ipynb_checkpoints" in all_checkpoints:
+        all_checkpoints.remove(".ipynb_checkpoints")   
+    if "best_model.pth" in all_checkpoints:
+        all_checkpoints.remove("best_model.pth")  
+    all_checkpoints.sort(key = lambda x: int(x.split(".")[0]))
+    all_checkpoints = [os.path.join(config["folder_path"], "model/", i) for i in all_checkpoints]
     logger.info("all checkpoints %s", all_checkpoints)
-
+    
+    best_checkpoint = None
+    best_micro_f1 = None
+    
     for checkpoint in all_checkpoints:
-        logger.info("%s rollout start with %s", name, checkpoint)
+        logger.info("select by %s start with %s", name, checkpoint)
         device, model = get_torch_model(
             BertLinerSoftmax, 
             model_config = {"model_name": config["model_name"], "loss_func": "ce", "label_num": config["label_num"]},
@@ -97,6 +103,14 @@ def rollout(logger, config, data_gen, dataloader, name, checkpoint = None):
         logger.info("metric is %s", metric.get_score())
         logger.info("mean metric is %s", metric.get_mean_score())
         
+        # update best_checkpoint
+        if best_checkpoint is None or metric.get_mean_score()["micro"]["f1"] > best_micro_f1:
+            best_checkpoint = checkpoint
+            best_micro_f1 = metric.get_mean_score()["micro"]["f1"]
+    
+    # select best model
+    save_best_model = os.path.join(config["folder_path"], "model/best_model.pth")
+    shutil.copyfile(best_checkpoint, save_best_model)
 
     # plot
     acc = []
@@ -119,6 +133,29 @@ def rollout(logger, config, data_gen, dataloader, name, checkpoint = None):
     logger.info("acc %s", acc)
     logger.info("recall %s", recall)
     logger.info("f1 %s", f1)
+    
+    
+def test(logger, config, data_gen, dataloader, name, checkpoint):
+    device, model = get_torch_model(
+        BertLinerSoftmax, 
+        model_config = {"model_name": config["model_name"], "loss_func": "ce", "label_num": config["label_num"]},
+        load_checkpoint_path = checkpoint,
+    )
+
+    trainer = Worker(
+        device = device,
+        model = model, 
+    )
+
+    outputs, _ = trainer.rollout(dataloader)
+    entity_outputs, entity_labels, offset_outputs = data_gen.decode(
+        outputs, 
+        data_gen.get_tokenize_length(name), 
+        data_gen.get_raw_data_y(name),
+    )
+    metric = NERMetric(data_gen.get_raw_data_x(name), entity_labels, entity_outputs)
+    logger.info("test metric is %s", metric.get_score())
+    logger.info("test mean metric is %s", metric.get_mean_score())
 
 
 def run_ner(config):
@@ -132,16 +169,24 @@ def run_ner(config):
     logger.info("prepare data")
     n_gpus = max(torch.cuda.device_count(), 1)
     data_gen = config["data_cls"](model_name = config["model_name"])
-    data_gen.init_data(folder_name = config["data_folder_name"])
+    data_gen.init_data(data_path = config["data_folder_name"])
     dataloader = data_gen.get_dataloader(batch_size = config["batch_size_per_gpu"] * n_gpus)
     logger.info("dataloader down")
 
     # train
-    logger.info("train start")
-    # train(logger, config, data_gen, dataloader["train"], dataloader["dev"])
-    logger.info("train end")
+    if config["if_train"]:
+        logger.info("train start")
+        train(logger, config, data_gen, dataloader["train"])
+        logger.info("train end")
 
+    # dev
+    if config["if_select"]:
+        logger.info("select start")
+        select(logger, config, data_gen, dataloader["dev"], "dev")
+        logger.info("select end")
+    
     # test
-    logger.info("rollout start")
-    rollout(logger, config, data_gen, dataloader["test"], "test")
-    logger.info("rollout end")
+    if config["if_test"]:
+        logger.info("test start")
+        test(logger, config, data_gen, dataloader["test"], "test", os.path.join(config["folder_path"], "model/best_model.pth"))
+        logger.info("test end")

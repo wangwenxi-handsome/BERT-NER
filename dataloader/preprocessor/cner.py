@@ -76,16 +76,16 @@ class CNERPreProcessor(BasePreProcessor):
         self.dev_fn = dev_fn
         self.test_fn = test_fn
 
-    def init_data(self, folder_name: str):
-        if folder_name[-4:] == ".pth":
-            data_path = folder_name
+    def init_data(self, data_path: str):
+        if data_path[-4:] == ".pth":
+            new_data_path = data_path
         else:
-            data_path = [
-                os.path.join(folder_name, self.train_fn), 
-                os.path.join(folder_name, self.dev_fn), 
-                os.path.join(folder_name, self.test_fn), 
+            new_data_path = [
+                os.path.join(data_path, self.train_fn), 
+                os.path.join(data_path, self.dev_fn), 
+                os.path.join(data_path, self.test_fn), 
             ]
-        super(CNERPreProcessor, self).init_data(data_path)
+        super(CNERPreProcessor, self).init_data(new_data_path)
 
     def _read_file(self, data_path):
         data_x = []
