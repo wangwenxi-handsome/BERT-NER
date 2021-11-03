@@ -8,15 +8,15 @@ from scripts.run_ner import run_ner
 global_config = {
     # path
     "data_cls": BYTEPreProcessor,
-    "data_folder_name": "product/data/byte_ner1/con_unchecked1019.npy",
+    "data_folder_name": "product/data/byte_ner1/data.pth",
     "folder_path": "product/experiments/byte1/",
     # model
     "model_name": "bert-base-chinese",
     "label_num": 63,
     # train
-    "epoch": 5,
+    "epoch": 6,
     "lr": 5e-05,
-    "batch_size_per_gpu": 24,
+    "batch_size_per_gpu": 12,
     "save_step_rate": 0.1,
     # main
     "if_train": True,

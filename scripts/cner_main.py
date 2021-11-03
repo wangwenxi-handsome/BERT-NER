@@ -19,7 +19,7 @@ global_config = {
     "batch_size_per_gpu": 24,
     "save_step_rate": 0.1,
     # main
-    "if_train": False,
+    "if_train": True,
     "if_select": True,
     "if_test": True,
 }

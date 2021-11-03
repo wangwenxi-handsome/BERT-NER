@@ -56,7 +56,7 @@ class Worker:
 
     def train(self, train_dataloader, dev_dataloader = None):
         global_step = 0
-        save_step = self.epoch * len(train_dataloader) * self.save_step_rate
+        save_step = int(self.epoch * len(train_dataloader) * self.save_step_rate)
         # custom progress par
         pbar = ProgressBar(n_total=len(train_dataloader), desc='Training', num_epochs=int(self.epoch))
         for e in range(self.epoch):
@@ -166,7 +166,6 @@ class Worker:
         return outputs, loss_mean
 
     def save_model(self, save_path):
-        # self.save_model(last_model, os.path.join(self.save_checkpoint_path, f"{e}.pth"))
         if hasattr(self.model, "module"):
             save_model = copy.deepcopy(self.model.module).cpu()
         else:
