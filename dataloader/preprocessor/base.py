@@ -204,10 +204,10 @@ class BasePreProcessor:
         return self.data["list"][name]["x"]
 
     def get_raw_data_y(self, name):
-        return self.data["list"][name]["y"]
+        return self.data["list"][name].get("y", None)
 
     def get_raw_data_id(self, name):
-        return self.data["list"][name]["id"]
+        return self.data["list"][name].get("id", None)
 
     def get_tokenize_length(self, name):
         return self.data["tensor"][name]["length"]
