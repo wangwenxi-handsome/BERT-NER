@@ -1,4 +1,5 @@
 import os
+import time
 import shutil
 import torch
 import torch.nn as nn
@@ -54,13 +55,14 @@ class BYTENERServer:
     def predict(self, data):
         self.predict_data_gen.init_data(data)
         worker = Worker(device = self.device, model = self.model)
-        _, outputs = worker.rollout(self.predict_data_gen.get_dataloader(batch_size = self.batch_size * self.n_gpus)["test"])
+        outputs, _ = worker.rollout(self.predict_data_gen.get_dataloader(batch_size = self.batch_size * self.n_gpus)["test"])
         entity_outputs, entity_labels, _ = self.predict_data_gen.decode(
                 outputs, 
                 self.predict_data_gen.get_tokenize_length("test"), 
                 self.predict_data_gen.get_raw_data_y("test"),
             )
-        return dict(zip(self.predict_data_gen.get_raw_data_id("test"), entity_outputs))
+        time5 = time.time()
+        return entity_outputs
 
     def train(self, data, folder_name, epoch = 3, lr = 5e-05):
         # data

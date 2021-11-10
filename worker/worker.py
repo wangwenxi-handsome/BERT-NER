@@ -147,10 +147,10 @@ class Worker:
                 else:
                     model_input[i] = None
             output, loss = self.model(**model_input)
-            if len(loss) > 1:
-                loss = loss.mean()
             outputs.append(output.cpu())
             if loss is not None:
+                if len(loss) > 1:
+                    loss = loss.mean()
                 if loss_sum is None:
                     loss_sum = loss
                 else:

@@ -104,5 +104,4 @@ class BYTEServingPreProcessor(BasePreProcessor):
         data_tensor = {}
         for i in data_list:
             data_tensor[i] = self.tokenize.get_data_with_tensor_format(data_list[i])
-        data = {"list": data_list, "tensor": data_tensor}
-        return data
+        self.data = {"list": data_list, "tensor": data_tensor}
