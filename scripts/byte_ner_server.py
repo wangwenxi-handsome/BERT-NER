@@ -12,6 +12,7 @@ if __name__ == "__main__":
     server = BYTENERServer(
         model_name = "bert-base-chinese", 
         load_checkpoint_path = None,
+        label_num = 63,
     )
 
     # test

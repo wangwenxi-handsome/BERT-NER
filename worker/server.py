@@ -16,8 +16,8 @@ class BYTENERServer:
         self,
         model_name,
         load_checkpoint_path,
-        batch_size = 12,
         label_num = 63,
+        batch_size = 12,
     ):
         setup_seed(42)
         # kwargs
