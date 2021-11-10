@@ -61,7 +61,6 @@ def train(logger, config, data_gen, train_dataloader, dev_dataloader = None):
         save_step_rate = config["save_step_rate"],
     )
     trainer.train(train_dataloader, dev_dataloader)
-    del trainer
 
 
 def select(logger, config, data_gen, dataloader, name):

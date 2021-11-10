@@ -8,7 +8,7 @@ class BYTERDataset(RDataset):
     def __init__(
         self, 
         ner_tag_method = "BIO",
-        split_rate = [0.8, 0.1, 0.1],
+        split_rate = [0.1, 0.1],
     ):
         super(BYTERDataset, self).__init__(split_rate = split_rate, ner_tag_method = ner_tag_method)
         self.ner_tag = NERTAG(self.classes, ner_tag_method)
@@ -19,8 +19,7 @@ class BYTERDataset(RDataset):
             now_sentence = list(d["sentence"])
             now_label = ["O" for _ in range(len(now_sentence))]
 
-            # 通过异常处理添加y
-            try:
+            if "results" in d:
                 for i in d["results"]:
                     start = i[0]
                     end = i[1]
@@ -35,13 +34,13 @@ class BYTERDataset(RDataset):
                                 now_label[j] = "I-" + ner_class
                 now_label = [self.ner_tag.tag2id[w] for w in now_label]
                 new_data["y"].append(now_label)
-            except:
+            else:
                 if "y" in new_data:
                     new_data.pop("y")
             
             # 添加x和id
             new_data["x"].append(now_sentence)
-            new_data["id"].append(d["itemID"])
+            new_data["id"].append(d.get("itemID", 0))
         return new_data
 
     @property
@@ -80,6 +79,8 @@ class BYTEServingPreProcessor(BasePreProcessor):
     def __init__(
         self,
         model_name,
+        dataloader_name,
+        split_rate,
         ner_tag_method = "BIO",
         max_length = 512,
     ):
@@ -92,7 +93,7 @@ class BYTEServingPreProcessor(BasePreProcessor):
             max_length = max_length,
         )
 
-    # TEST时候的data_path直接就是data的形式
+    # Serving时候的data_path直接就是data的形式
     def init_data(self, data_path):
         data_list = []
         data_list.extend(self.rdataset.get_data_with_list_format(data_path))

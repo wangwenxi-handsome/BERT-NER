@@ -20,6 +20,7 @@ class RDataset:
         split_rate,
         if_cross_valid = False,
         if_tag_first = True,
+        ner_classes = None,
     ):
         # ner precess
         self.ner_tag_method = ner_tag_method
